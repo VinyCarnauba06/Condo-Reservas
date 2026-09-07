@@ -94,29 +94,29 @@ Este é um sistema de produção lidando com dados de moradores, então seguran�
 
 > As capturas abaixo são do sistema rodando com dados fictícios (nenhum dado real de condomínio ou morador).
 
-| Login | Dashboard / Calendário |
+| Login | Dashboard |
 |---|---|
-| _adicionar screenshot_ | _adicionar screenshot_ |
+| ![Login](docs/screenshots/login.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
 | Lista de Condomínios | Cadastro de Condomínio |
 |---|---|
-| _adicionar screenshot_ | _adicionar screenshot_ |
+| ![Condomínios](docs/screenshots/condominios.png) | ![Novo Condomínio](docs/screenshots/novo_condominio.png) |
 
-| Relatório Semanal (PDF) | Termos e Comunicados |
+| Relatório Semanal (exportado) | Termos e Comunicados |
 |---|---|
-| _adicionar screenshot_ | _adicionar screenshot_ |
+| ![Relatório](docs/screenshots/relatorio.png) | ![Termos](docs/screenshots/termos.png) |
 
-| Painel Administrativo |
+| Painel Administrativo (feriados) |
 |---|
-| _adicionar screenshot_ |
+| ![Admin](docs/screenshots/admin.png) |
 
 ---
 
 ## Instalação local
 
 ```bash
-git clone https://github.com/VinyCarnauba06/Sistema-de-Gest-o-de-Reservas.git
-cd Sistema-de-Gest-o-de-Reservas
+git clone https://github.com/VinyCarnauba06/Condo-Reservas.git
+cd Condo-Reservas
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -127,7 +127,7 @@ Crie o arquivo `.env` na raiz (use `.env.example` como base):
 ```env
 SECRET_KEY=gere_uma_chave_forte_aqui
 ADMIN_PASSWORD=sua_senha_forte_aqui
-DATABASE_URL=sqlite:///instance/condoreservas.db
+DATABASE_URL=sqlite:///condoreservas.db
 FLASK_ENV=development
 FLASK_DEBUG=true
 ENCRYPTION_KEY=gere_com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -147,6 +147,34 @@ Acesse `http://localhost:5000` — login `admin`, senha definida no `.env` (o us
 ```bash
 python seed_feriados.py
 ```
+
+### Popular dados de demonstração (dev)
+
+```bash
+python seed_demo.py
+```
+
+Popula o banco com um dataset fictício completo para explorar o sistema sem
+cadastrar nada à mão. **Idempotente e aditivo** — cada item só é criado se
+ainda não existir, então rodar de novo não duplica e não apaga nada. O
+script garante o schema antes de inserir (`flask db upgrade` em
+PostgreSQL; `db.create_all()` como fallback em SQLite) e delega os feriados
+ao `seed_feriados.py`.
+
+| Entidade | O que é criado |
+|---|---|
+| Usuários | Um por perfil — `admin`, `operador` (Marina, Rafael), `coordenador` (Patrícia), `fiscal` (João), `fiscal_fixo` (Antônio) — mais um operador inativo |
+| Condomínios / salões | 4 condomínios, 8 salões — cobrindo dia inteiro, horário fixo, grupo + combo, fiscal próprio seg–sáb e condomínio que não emite termo |
+| Inventário | Itens padrão por salão, usados no checklist do termo de vistoria |
+| Reservas | ~50 no total: um lote de −3 a +2 meses (confirmadas, pendentes, canceladas, festa do condomínio, um par de vistoria combinada) e 10 na semana atual (segunda a domingo). Solicitante, apartamento e contato são fictícios — os telefones usam DDD inexistente (00/01) e contagem de dígitos fora do padrão, de propósito, para não baterem com número real |
+| Vistorias digitais | Termos de vistoria + revistoria com itens conferidos, para reservas passadas que exigiam vistoria da administradora |
+| Créditos | Um disponível e um já consumido, vinculado a uma reserva |
+| Bloqueios | Períodos bloqueados, globais e por condomínio |
+| Regras de precificação | Regra de isenção anual + cota já registrada por unidade |
+
+Senha de todos os usuários de teste: `senha123!` (ou o valor de
+`SEED_PASSWORD` no `.env`). Logins: `admin`, `marina`, `rafael`,
+`patricia`, `joao.fiscal`, `antonio.fixo` (`carlos.antigo` é o inativo).
 
 ---
 
@@ -176,6 +204,7 @@ condoreservas/
 ├── rotina_fuga.py             — exporta reservas dos próximos 15 dias em caso de indisponibilidade
 ├── migrate_sqlite_to_pg.py    — script de migração SQLite → PostgreSQL
 ├── seed_feriados.py           — popula feriados nacionais/estaduais/municipais
+├── seed_demo.py               — popula dataset fictício de demonstração (idempotente)
 ├── run.py
 ├── requirements.txt
 └── .env.example
