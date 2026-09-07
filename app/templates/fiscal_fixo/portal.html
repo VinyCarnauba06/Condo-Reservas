@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal — {{ condominio.nome }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  background: #0c1828; color: #ebebeb; padding: 16px;
+}
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 10px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(59,130,246,0.12); border: 0.5px solid rgba(46,95,138,0.3);
+  display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 18px; flex-shrink: 0;
+}
+.topbar h1 { font-size: 15px; font-weight: 700; margin: 0; color: #ebebeb; }
+.topbar p  { font-size: 11px; color: #4a6580; margin: 2px 0 0; }
+.logout-btn {
+  width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  color: #909090; text-decoration: none; flex-shrink: 0;
+}
+.flash { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.action-btn {
+  background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 14px;
+  padding: 16px 12px; text-align: center; text-decoration: none; color: #ebebeb;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 600; font-size: 13px;
+}
+.action-btn .ti { font-size: 22px; color: #60a5fa; }
+.action-btn.inventario .ti { color: #a78bfa; }
+
+.section-title { font-size: 11px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+
+.card {
+  background: #111e30; border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 10px;
+}
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.card-nome { font-size: 14px; font-weight: 700; color: #ebebeb; margin: 0 0 3px; }
+.card-sub  { font-size: 12px; color: #4a6580; margin: 0; }
+.dia-badge {
+  font-size: 11px; font-weight: 700; color: #60a5fa; background: rgba(59,130,246,0.12);
+  border: 0.5px solid rgba(46,95,138,0.3); padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0;
+}
+.card-actions { display: flex; gap: 8px; margin-top: 12px; }
+.btn-sm {
+  flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 700;
+  text-decoration: none; text-align: center; border: none; cursor: pointer;
+}
+.btn-comunicado { background: rgba(59,130,246,0.12);  color: #60a5fa;  border: 0.5px solid rgba(46,95,138,0.3); }
+.btn-termo      { background: rgba(167,139,250,0.12); color: #a78bfa;  border: 0.5px solid rgba(167,139,250,0.3); }
+.btn-editar     { background: rgba(251,191,36,0.10);  color: #fbbf24;  border: 0.5px solid rgba(251,191,36,0.25); }
+.btn-cancelar   { background: rgba(239,68,68,0.10);   color: #fca5a5;  border: 0.5px solid rgba(239,68,68,0.25); }
+
+/* botão nova reserva */
+.btn-nova-reserva {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
+  background: #2563eb; color: #fff; font-family: inherit; font-size: 14px;
+  font-weight: 700; text-decoration: none; margin-bottom: 20px;
+}
+.btn-nova-reserva:active { background: #1d4ed8; }
+.btn-config {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 12px; border-radius: 14px; border: none;
+  background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08);
+  color: #909090; font-family: inherit; font-size: 13px;
+  font-weight: 700; text-decoration: none; margin-bottom: 20px;
+}
+.btn-config:active { background: rgba(255,255,255,0.08); }
+
+/* modal cancelamento */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: #111e30; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 20px 20px 0 0; padding: 20px; width: 100%; }
+.modal-box h3 { font-size: 14px; font-weight: 700; margin: 0 0 12px; }
+.modal-box textarea { width: 100%; background: #0c1828; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ebebeb; font-family: inherit; font-size: 13px; padding: 10px 12px; resize: none; height: 80px; outline: none; box-sizing: border-box; }
+.modal-btns { display: flex; gap: 8px; margin-top: 12px; }
+.modal-btns button { flex: 1; padding: 11px; border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+.btn-confirm-cancel { background: rgba(239,68,68,0.8); color: #fff; }
+.btn-dismiss { background: rgba(255,255,255,0.06); color: #909090; }
+
+.empty { text-align: center; padding: 40px 20px; color: #4a6580; font-size: 13px; }
+.empty .ti { font-size: 36px; display: block; margin-bottom: 10px; color: #1e3a5f; }
+
+/* cards de vistoria */
+.vistoria-card { background: #111e30; border: 0.5px solid rgba(167,139,250,0.2); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+.vistoria-card .card-nome { font-size: 14px; font-weight: 700; color: #ebebeb; margin: 0 0 3px; }
+.vistoria-card .card-sub  { font-size: 12px; color: #4a6580; margin: 0; }
+.badge-hora { font-size: 11px; font-weight: 700; color: #a78bfa; background: rgba(167,139,250,0.12); border: 0.5px solid rgba(167,139,250,0.25); padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
+.btn-fazer-termo { flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 700; text-decoration: none; text-align: center; background: rgba(167,139,250,0.15); color: #a78bfa; border: 0.5px solid rgba(167,139,250,0.3); display: block; }
+.empty .ti { font-size: 36px; display: block; margin-bottom: 10px; color: #1e3a5f; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-icon"><svg class="ti ti-building"><use href="#ti-building"></use></svg></div>
+    <div>
+      <h1>{{ condominio.nome }}</h1>
+      <p>Portal do Fiscal</p>
+    </div>
+  </div>
+  <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Sair">
+    <svg class="ti ti-logout"><use href="#ti-logout"></use></svg>
+  </a>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {{ cat }}"><svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> {{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<a href="{{ url_for('fiscal_fixo.nova_reserva') }}" class="btn-nova-reserva">
+  <svg class="ti ti-calendar-plus"><use href="#ti-calendar-plus"></use></svg> Nova Reserva
+</a>
+<a href="{{ url_for('fiscal_fixo.configuracoes') }}" class="btn-config">
+  <svg class="ti ti-settings"><use href="#ti-settings"></use></svg> Configurações do Condomínio
+</a>
+
+{% if condominio.termo_fotografico %}
+<div class="action-grid" style="margin-bottom:20px">
+  {% for salao in condominio.saloes %}
+  <a href="{{ url_for('fiscal_fixo.inventario', salao_id=salao.id) }}" class="action-btn inventario">
+    <svg class="ti ti-clipboard-list"><use href="#ti-clipboard-list"></use></svg>
+    {{ salao.nome }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if condominio.emite_termo %}
+{# ── Vistorias de hoje ── #}
+{% set lista_v_hoje = vistorias_hoje + revistorias_hoje %}
+{% if lista_v_hoje %}
+<p class="section-title"><svg class="ti ti-clipboard-check" style="margin-right:4px"><use href="#ti-clipboard-check"></use></svg>Vistorias de hoje</p>
+{% for r in lista_v_hoje %}
+<div class="vistoria-card">
+  <div class="card-top">
+    <div>
+      <p class="card-nome">{{ r.nome_solicitante or 'Festa do Condomínio' }}</p>
+      <p class="card-sub">
+        {% if r.apartamento %}Apt {{ r.apartamento }} · {% endif %}{{ r.salao.nome }}
+        {% if r in revistorias_hoje %}<span style="color:#a78bfa"> · Revistoria</span>{% endif %}
+      </p>
+    </div>
+    {% if r.hora_vistoria %}
+    <span class="badge-hora">{{ r.hora_vistoria }}</span>
+    {% else %}
+    <span class="dia-badge">{{ r.data_festa.strftime('%d/%m') }}</span>
+    {% endif %}
+  </div>
+  <div class="card-actions" style="margin-top:10px">
+    {% if r in vistorias_hoje %}
+    <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=r.id, momento='vistoria') }}" class="btn-fazer-termo">
+      <svg class="ti ti-clipboard-list"><use href="#ti-clipboard-list"></use></svg> Fazer Vistoria
+    </a>
+    {% else %}
+    <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=r.id, momento='revistoria') }}" class="btn-fazer-termo">
+      <svg class="ti ti-clipboard-check"><use href="#ti-clipboard-check"></use></svg> Fazer Revistoria
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{# ── Vistorias de amanhã ── #}
+{% set lista_v_amanha = vistorias_amanha + revistorias_amanha %}
+{% if lista_v_amanha %}
+<p class="section-title" style="margin-top:4px"><svg class="ti ti-calendar-event" style="margin-right:4px"><use href="#ti-calendar-event"></use></svg>Vistorias amanhã</p>
+{% for r in lista_v_amanha %}
+<div class="vistoria-card">
+  <div class="card-top">
+    <div>
+      <p class="card-nome">{{ r.nome_solicitante or 'Festa do Condomínio' }}</p>
+      <p class="card-sub">
+        {% if r.apartamento %}Apt {{ r.apartamento }} · {% endif %}{{ r.salao.nome }}
+        {% if r in revistorias_amanha %}<span style="color:#a78bfa"> · Revistoria</span>{% endif %}
+      </p>
+    </div>
+    {% if r.hora_vistoria %}
+    <span class="badge-hora">{{ r.hora_vistoria }}</span>
+    {% else %}
+    <span class="dia-badge">{{ r.data_festa.strftime('%d/%m') }}</span>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+
+<p class="section-title">Próximas reservas</p>
+
+{% if reservas %}
+  {% for r in reservas %}
+  <div class="card">
+    <div class="card-top">
+      <div>
+        <p class="card-nome">{{ r.nome_solicitante or 'Festa do Condomínio' }}</p>
+        <p class="card-sub">
+          {% if r.apartamento %}Apt {{ r.apartamento }} · {% endif %}{{ r.salao.nome }}
+          {% if r.status == 'pendente' %}<span style="color:#fbbf24"> · Pendente</span>{% endif %}
+        </p>
+      </div>
+      <span class="dia-badge">{{ r.data_festa.strftime('%d/%m') }}</span>
+    </div>
+    {% if r.observacoes %}
+    <p style="font-size:12px;color:#4a6580;margin:8px 0 0;">{{ r.observacoes }}</p>
+    {% endif %}
+    <div class="card-actions">
+      {% if condominio.emite_comunicado %}
+      <a href="{{ url_for('fiscal_fixo.gerar_comunicado', reserva_id=r.id) }}" class="btn-sm btn-comunicado">
+        <svg class="ti ti-file-text"><use href="#ti-file-text"></use></svg> Comunicado
+      </a>
+      {% endif %}
+      {% if condominio.emite_termo and r.vistoria %}
+      <a href="{{ url_for('relatorios.termo_individual', reserva_id=r.id) }}" class="btn-sm btn-termo">
+        <svg class="ti ti-file-certificate"><use href="#ti-file-certificate"></use></svg> Termo
+      </a>
+      {% endif %}
+      <a href="{{ url_for('reservas.editar_reserva', id=r.id) }}" class="btn-sm btn-editar">
+        <svg class="ti ti-edit"><use href="#ti-edit"></use></svg> Editar
+      </a>
+      <button type="button" class="btn-sm btn-cancelar" onclick="abrirCancelar({{ r.id }}, '{{ r.nome_solicitante or 'esta reserva' }}')">
+        <svg class="ti ti-x"><use href="#ti-x"></use></svg> Cancelar
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <svg class="ti ti-calendar-off"><use href="#ti-calendar-off"></use></svg>
+    Nenhuma reserva nos próximos dias
+  </div>
+{% endif %}
+
+{# ── Modal de cancelamento ── #}
+<div class="modal-overlay" id="modal-cancelar">
+  <div class="modal-box">
+    <h3>Cancelar reserva de <span id="modal-nome"></span>?</h3>
+    <form method="POST" id="form-cancelar">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="observacao_cancelamento" placeholder="Motivo do cancelamento (opcional)" maxlength="500"></textarea>
+      <div class="modal-btns">
+        <button type="button" class="btn-dismiss" onclick="fecharModal()">Voltar</button>
+        <button type="submit" class="btn-confirm-cancel"><svg class="ti ti-trash"><use href="#ti-trash"></use></svg> Confirmar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function abrirCancelar(reservaId, nome) {
+  document.getElementById('modal-nome').textContent = nome;
+  document.getElementById('form-cancelar').action = '/reserva/' + reservaId + '/cancelar';
+  document.getElementById('modal-cancelar').classList.add('open');
+}
+function fecharModal() {
+  document.getElementById('modal-cancelar').classList.remove('open');
+}
+document.getElementById('modal-cancelar').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
+</script>
+</body>
+</html>

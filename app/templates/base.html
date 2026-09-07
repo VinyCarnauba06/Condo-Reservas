@@ -1,0 +1,794 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <script>
+    // [FIX] proteção CSRF pros fetch() de POST/PATCH/PUT/DELETE espalhados
+    // pelos templates (G/E/P do boleto, marcar-impresso, termo/comunicado
+    // override). Em vez de editar fetch por fetch em cada template,
+    // intercepta window.fetch uma vez só aqui e injeta o header em toda
+    // chamada same-origin que muda estado. Roda antes de qualquer outro
+    // script da página, então cobre tudo que usa fetch() daqui pra frente.
+    (function () {
+      var meta  = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.content : '';
+      var originalFetch = window.fetch;
+      window.fetch = function (input, init) {
+        init = init || {};
+        var method = (init.method || 'GET').toUpperCase();
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1) {
+          var headers = new Headers(init.headers || {});
+          if (!headers.has('X-CSRFToken')) {
+            headers.set('X-CSRFToken', token);
+          }
+          init.headers = headers;
+        }
+        return originalFetch(input, init);
+      };
+    })();
+  </script>
+  <title>{% block title %}CondoReservas{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: {
+        sans:  ['DM Sans','BlinkMacSystemFont','-apple-system','sans-serif'],
+        serif: ['DM Serif Display','serif'],
+      }}}
+    }
+  </script>
+  <style>
+    :root {
+      --c-primary:        #2563EB;
+      --c-primary-hover:  #3b82f6;
+      --c-primary-light:  #60a5fa;
+      --c-primary-dim:    rgba(59,130,246,0.18);
+      --c-primary-glow:   rgba(59,130,246,0.3);
+      --c-bg-base:        #0c1828;
+      --c-bg-card:        #111e30;
+      --c-bg-elevated:    #152338;
+      --c-bg-hover:       #1c2e44;
+      --c-bg-input:       #152338;
+      --c-border:         rgba(255,255,255,0.07);
+      --c-border-subtle:  rgba(255,255,255,0.04);
+      --c-border-strong:  rgba(255,255,255,0.11);
+      --c-text-primary:   #ebebeb;
+      --c-text-secondary: #909090;
+      --c-text-muted:     #4a6580;
+      --c-success-bg:     rgba(34,197,94,0.12);
+      --c-success-text:   #4ade80;
+      --c-success-border: rgba(34,197,94,0.2);
+      --c-warning-bg:     rgba(245,158,11,0.15);
+      --c-warning-text:   #fbbf24;
+      --c-warning-border: rgba(245,158,11,0.25);
+      --c-danger-bg:      rgba(239,68,68,0.15);
+      --c-danger-text:    #f87171;
+      --c-danger-border:  rgba(239,68,68,0.25);
+      --c-info-bg:        rgba(59,130,246,0.1);
+      --c-info-text:      #60a5fa;
+      --c-info-border:    rgba(59,130,246,0.2);
+      --sidebar-w:        260px;
+      --transition:       cubic-bezier(0.4,0,0.2,1) 0.2s;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    @keyframes page-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page-content {
+      animation: page-in 0.3s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--c-bg-base);
+      background-image:
+        radial-gradient(ellipse 60% 50% at 0% 0%,   rgba(37,99,235,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 45% at 100% 100%, rgba(37,99,235,0.04) 0%, transparent 70%);
+      background-attachment: fixed;
+      color: var(--c-text-primary);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .app-layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar wrapper (floating outer) ──────────────────── */
+    #sidebar-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: var(--sidebar-w);
+      padding: 12px 0 12px 12px;
+      z-index: 50;
+      transition: width var(--transition);
+      flex-shrink: 0;
+    }
+
+    /* ── Sidebar inner pill ────────────────────────────────── */
+    #sidebar {
+      width: 100%;
+      height: 100%;
+      background: #0a1a2e;
+      border-radius: 28px;
+      border: 0.5px solid var(--c-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all var(--transition);
+    }
+
+    /* ── Main wrapper ──────────────────────────────────────── */
+    #main-content {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: margin-left var(--transition);
+    }
+
+    /* ── Topbar ────────────────────────────────────────────── */
+    #topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      height: 60px;
+      background: #091524;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      flex-shrink: 0;
+    }
+
+    /* ── Sidebar logo ──────────────────────────────────────── */
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 16px 14px;
+      border-bottom: 0.5px solid var(--c-border-subtle);
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+    .sidebar-logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, var(--c-primary), #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(59,130,246,0.35);
+    }
+    .sidebar-logo-icon i { color: #fff; font-size: 18px; }
+    .logo-text {
+      overflow: hidden;
+      transition: opacity var(--transition), width var(--transition);
+      white-space: nowrap;
+    }
+    .logo-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--c-text-primary);
+      line-height: 1.1;
+    }
+    .logo-name span { color: var(--c-primary-light); }
+    .logo-sub {
+      font-size: 10px;
+      color: #3d5a7a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* ── Nav ───────────────────────────────────────────────── */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sidebar-nav::-webkit-scrollbar { width: 2px; }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: #3d5a7a;
+      text-transform: uppercase;
+      padding: 10px 10px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--c-text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: background var(--transition), color var(--transition), transform var(--transition);
+    }
+    .sidebar-link i {
+      font-size: 17px;
+      flex-shrink: 0;
+      width: 20px;
+      text-align: center;
+    }
+    .sidebar-link .nav-label { overflow: hidden; }
+    .sidebar-link:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--c-text-primary);
+      transform: translateX(2px);
+    }
+    .sidebar-link.active {
+      background: var(--c-primary-dim) !important;
+      color: var(--c-primary-light) !important;
+      font-weight: 600;
+    }
+    .sidebar-link.active i { color: var(--c-primary-light); }
+
+    /* ── Sidebar footer ────────────────────────────────────── */
+    .sidebar-footer {
+      padding: 10px 12px;
+      border-top: 0.5px solid var(--c-border-subtle);
+      flex-shrink: 0;
+    }
+
+    /* ── Collapse toggle ───────────────────────────────────── */
+    #sidebar-toggle {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 7px;
+      border-radius: 10px;
+      color: var(--c-text-muted);
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      width: 100%;
+    }
+    #sidebar-toggle:hover { background: rgba(255,255,255,0.05); color: var(--c-text-secondary); }
+
+    /* ── Collapsed state ───────────────────────────────────── */
+    body.sb-collapsed { --sidebar-w: 72px; }
+    body.sb-collapsed .logo-text { opacity: 0; width: 0; }
+    body.sb-collapsed .nav-section-label { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+    body.sb-collapsed .nav-label { opacity: 0; width: 0; }
+    body.sb-collapsed .sidebar-link {
+      justify-content: center !important;
+      padding: 9px !important;
+      gap: 0 !important;
+    }
+    body.sb-collapsed .sidebar-footer-text { display: none; }
+
+    /* ── Avatar ────────────────────────────────────────────── */
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--c-primary), var(--c-primary-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563EB, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563EB);
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px rgba(59,130,246,0.45), 0 6px 20px rgba(0,0,0,0.35);
+      color: #fff;
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.04);
+      color: var(--c-text-secondary);
+      border: 0.5px solid var(--c-border);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.07);
+      color: var(--c-text-primary);
+    }
+    .btn-danger {
+      background: rgba(239,68,68,0.12);
+      color: #f87171;
+      border: 0.5px solid rgba(239,68,68,0.2);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.2); transform: translateY(-1px); }
+
+    /* ── Cards ─────────────────────────────────────────────── */
+    .card {
+      background: var(--c-bg-card);
+      border: 0.5px solid var(--c-border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .bento-card {
+      background: var(--c-bg-card);
+      border: 0.5px solid var(--c-border);
+      border-radius: 20px;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .bento-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(59,130,246,0.25);
+      border-color: rgba(59,130,246,0.4);
+    }
+    .card-header {
+      padding: 16px 22px;
+      border-bottom: 0.5px solid var(--c-border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header-gradient {
+      background: linear-gradient(135deg, #0f1f30, #071525);
+      padding: 22px 24px;
+      border-bottom: 0.5px solid rgba(37,99,235,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-header-gradient::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: rgba(37,99,235,0.07);
+      pointer-events: none;
+    }
+
+    /* ── Inputs ────────────────────────────────────────────── */
+    input[type="text"],
+    input[type="date"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="file"],
+    select,
+    textarea {
+      background-color: var(--c-bg-input) !important;
+      border: 0.5px solid rgba(255,255,255,0.08) !important;
+      color: var(--c-text-primary) !important;
+      font-family: 'DM Sans', sans-serif;
+    }
+    input::placeholder, textarea::placeholder { color: var(--c-text-muted) !important; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--c-primary-light) !important;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+      outline: none !important;
+    }
+    select option { background-color: #1e1e1e; color: var(--c-text-primary); }
+
+    /* ── Badges ────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .badge-success { background: var(--c-success-bg); color: var(--c-success-text); border: 0.5px solid var(--c-success-border); }
+    .badge-warning { background: var(--c-warning-bg); color: var(--c-warning-text); border: 0.5px solid var(--c-warning-border); }
+    .badge-danger  { background: var(--c-danger-bg);  color: var(--c-danger-text);  border: 0.5px solid var(--c-danger-border); }
+    .badge-info    { background: var(--c-info-bg);    color: var(--c-info-text);    border: 0.5px solid var(--c-info-border); }
+    .badge-neutral { background: rgba(255,255,255,0.06); color: var(--c-text-secondary); border: 0.5px solid var(--c-border); }
+    .badge-violet  { background: rgba(139,92,246,0.15); color: #a78bfa; border: 0.5px solid rgba(139,92,246,0.25); }
+
+    /* ── Tables ────────────────────────────────────────────── */
+    .dark-table { width: 100%; border-collapse: collapse; }
+    .dark-table thead tr { background-color: rgba(255,255,255,0.02); }
+    .dark-table th {
+      padding: 12px 18px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-bottom: 0.5px solid var(--c-border);
+    }
+    .dark-table td {
+      padding: 13px 18px;
+      font-size: 13px;
+      color: var(--c-text-primary);
+      border-bottom: 0.5px solid var(--c-border-subtle);
+    }
+    .dark-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+    .dark-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .dark-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Calendar ───────────────────────────────────────────── */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal-cell-empty     { background-color: rgba(255,255,255,0.02); }
+    .cal-cell-blocked   { background-color: rgba(15,25,45,0.7); }
+    .cal-cell-vistoria  { background-color: rgba(200,160,40,0.10); }
+    .cal-cell-confirmado{ background-color: rgba(59,130,246,0.14); }
+    .cal-cell-pendente  { background-color: rgba(220,120,40,0.13); }
+    .cal-cell-zelador   { background-color: rgba(40,180,120,0.13); }
+    .cal-cell-surpresa  { background-color: rgba(140,80,200,0.13); }
+    .cal-cell-cancelado { background-color: rgba(200,60,60,0.10); }
+
+    /* ── Status pills (radio/checkbox selectors) ────────────── */
+    .status-pill input[type="radio"],
+    .status-pill input[type="checkbox"] { display: none; }
+
+    /* ── Empty states ───────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      gap: 12px;
+      text-align: center;
+      background: var(--c-bg-card);
+      border: 0.5px solid var(--c-border);
+      border-radius: 20px;
+    }
+    .empty-state .empty-icon { font-size: 48px; opacity: 0.2; color: var(--c-primary); line-height: 1; }
+    .empty-state p { color: var(--c-text-secondary); font-size: 13px; margin: 0; }
+
+    /* ── Flash toast ────────────────────────────────────────── */
+    .flash-toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 0.5px solid transparent;
+    }
+    .flash-toast.success { background: rgba(22,101,52,0.8);  color: #86efac; border-color: rgba(34,197,94,0.25); }
+    .flash-toast.danger,
+    .flash-toast.error   { background: rgba(127,29,29,0.8);  color: #fca5a5; border-color: rgba(239,68,68,0.25); }
+    .flash-toast.warning { background: rgba(120,53,15,0.8);  color: #fcd34d; border-color: rgba(245,158,11,0.25); }
+    .flash-toast.info    { background: rgba(17,53,85,0.8);   color: #93c5fd; border-color: rgba(59,130,246,0.25); }
+
+    /* ── Divider ─────────────────────────────────────────────── */
+    .divider { height: 0.5px; background: var(--c-border); margin: 16px 0; }
+
+    /* ── Typography helpers ──────────────────────────────────── */
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.4px; color: var(--c-text-primary); }
+    .section-title { font-size: 14px; font-weight: 700; color: var(--c-text-primary); }
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 7px;
+    }
+
+    /* ── Modal (legacy hidden/visible style) ─────────────────── */
+    [id^="modal-"].hidden { display: none !important; }
+    [id^="modal-"]:not(.hidden) {
+      display: flex !important;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(4px);
+      z-index: 900;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+
+<script>
+  /* Apply sidebar collapse before first paint */
+  if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    document.body.classList.add('sb-collapsed');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input:not([type=radio]):not([type=checkbox]):not([type=hidden]), textarea')
+      .forEach(function(i) { i.setAttribute('autocomplete', 'off'); });
+  });
+</script>
+
+<div class="app-layout">
+
+  <!-- ════════════════════════════════════════════
+       SIDEBAR (floating pill)
+  ════════════════════════════════════════════ -->
+  {% if session.get('usuario_perfil') != 'fiscal' %}
+  <div id="sidebar-wrapper">
+    <div id="sidebar">
+
+      <!-- Logo -->
+      <a href="{{ url_for('condominios.home') }}" class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <i class="ti ti-building-warehouse"></i>
+        </div>
+        <div class="logo-text">
+          <div class="logo-name">PRO<span>LAR</span></div>
+          <div class="logo-sub">Administradora System</div>
+        </div>
+      </a>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+
+        <p class="nav-section-label">Menu</p>
+
+        <a href="{{ url_for('condominios.home') }}" class="sidebar-link" title="Dashboard">
+          <i class="ti ti-layout-dashboard"></i>
+          <span class="nav-label">Dashboard</span>
+        </a>
+
+        <a href="{{ url_for('condominios.lista_condominios') }}" class="sidebar-link" title="Condomínios">
+          <i class="ti ti-building"></i>
+          <span class="nav-label">Condomínios</span>
+        </a>
+
+        <a href="{{ url_for('relatorios.relatorio_semanal') }}" class="sidebar-link" title="Relatórios">
+          <i class="ti ti-chart-bar"></i>
+          <span class="nav-label">Relatórios</span>
+        </a>
+
+        <a href="{{ url_for('relatorios.relatorio_fds') }}" class="sidebar-link" title="Fim de Semana">
+          <i class="ti ti-calendar-week"></i>
+          <span class="nav-label">Fim de Semana</span>
+        </a>
+
+        <a href="{{ url_for('relatorios.termos_comunicados') }}" class="sidebar-link" title="Termos e Comunicados">
+          <i class="ti ti-file-text"></i>
+          <span class="nav-label">Termos e Comunicados</span>
+        </a>
+
+        <div class="divider" style="margin:8px 0"></div>
+        <p class="nav-section-label">Sistema</p>
+
+        <a href="{{ url_for('relatorios.admin_feriados') }}" class="sidebar-link" title="Admin">
+          <i class="ti ti-settings"></i>
+          <span class="nav-label">Admin</span>
+        </a>
+
+        <a href="{{ url_for('relatorios.recibos_zelador') }}" class="sidebar-link" title="Recibos de Zelador">
+          <i class="ti ti-receipt"></i>
+          <span class="nav-label">Recibos de Zelador</span>
+        </a>
+
+        <a href="{{ url_for('relatorios.listar_regras_precificacao') }}" class="sidebar-link" title="Precificação">
+          <i class="ti ti-rosette-discount"></i>
+          <span class="nav-label">Precificação</span>
+        </a>
+
+        {% if session.get('usuario_perfil') == 'admin' %}
+        <a href="{{ url_for('usuarios.listar_usuarios') }}" class="sidebar-link" title="Usuários">
+          <i class="ti ti-users"></i>
+          <span class="nav-label">Usuários</span>
+        </a>
+
+        {# [FEATURE] pedido do Viny: admin tem acesso a absolutamente tudo,
+           incluindo o painel do fiscal/coordenador (mesmo não usando no
+           dia a dia). #}
+        <a href="{{ url_for('vistorias.painel_fiscal') }}" class="sidebar-link" title="Painel do Fiscal">
+          <i class="ti ti-clipboard-check"></i>
+          <span class="nav-label">Painel do Fiscal</span>
+        </a>
+        {% endif %}
+
+      </nav>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <button id="sidebar-toggle" title="Recolher menu">
+          <i class="ti ti-menu-2" style="font-size:18px"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ════════════════════════════════════════════
+       MAIN CONTENT
+  ════════════════════════════════════════════ -->
+  <div id="main-content" class="flex flex-col min-h-screen"
+    {% if session.get('usuario_perfil') in ('fiscal', 'coordenador') %}style="margin-left:0"{% endif %}>
+
+    <!-- Topbar -->
+    <header id="topbar">
+      <span style="font-size:13px;font-weight:600;color:var(--c-text-secondary)">
+        {% block page_title %}CondoReservas{% endblock %}
+      </span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <!-- User chip -->
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 10px 4px 6px;background:rgba(255,255,255,0.04);border:0.5px solid var(--c-border);border-radius:99px">
+          <div class="user-avatar">{{ session.get('usuario_nome', '?')[0].upper() }}</div>
+          <span style="font-size:12px;color:var(--c-text-secondary);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {{ session.get('usuario_nome', '') }}
+          </span>
+          {# DEBUG — remover após confirmação em produção #}
+          <span title="debug:perfil" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(255,200,0,0.15);color:#f59e0b;border:0.5px solid rgba(245,158,11,0.3);letter-spacing:0.05em">
+            {{ session.get('usuario_perfil') or 'None' }}
+          </span>
+        </div>
+        <a href="{{ url_for('auth.logout') }}"
+          style="font-size:12px;font-weight:600;color:var(--c-text-muted);text-decoration:none;padding:6px 8px;border-radius:8px;transition:all var(--transition)"
+          onmouseover="this.style.color='#f87171';this.style.background='rgba(239,68,68,0.08)'"
+          onmouseout="this.style.color='var(--c-text-muted)';this.style.background='transparent'">
+          <i class="ti ti-logout" style="font-size:15px"></i>
+        </a>
+        {% if session.get('usuario_perfil') != 'fiscal' %}
+        <a href="{{ url_for('condominios.novo_condominio') }}"
+          class="btn btn-primary"
+          style="font-size:12px;padding:7px 14px;border-radius:20px">
+          <i class="ti ti-plus" style="font-size:14px"></i> Novo Condomínio
+        </a>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-toast {{ category }}" style="display:flex;align-items:center;gap:8px">
+          {% if category == 'success' %}<i class="ti ti-circle-check" style="font-size:16px;flex-shrink:0"></i>
+          {% else %}<i class="ti ti-alert-circle" style="font-size:16px;flex-shrink:0"></i>{% endif %}
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Page content -->
+    <main style="flex:1;padding:28px 32px" class="page-content">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+/* ── Active link highlight ─────────────────────────────── */
+(function() {
+  var path = window.location.pathname;
+  document.querySelectorAll('.sidebar-link').forEach(function(link) {
+    var href = link.getAttribute('href');
+    if (href && (href === path || (href !== '/' && path.startsWith(href)))) {
+      link.classList.add('active');
+    }
+  });
+})();
+
+/* ── Sidebar collapse ──────────────────────────────────── */
+(function() {
+  if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    document.body.classList.add('sb-collapsed');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('sidebar-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var collapsed = document.body.classList.toggle('sb-collapsed');
+      localStorage.setItem('sidebarCollapsed', collapsed);
+      btn.title = collapsed ? 'Expandir menu' : 'Recolher menu';
+      var icon = btn.querySelector('i');
+      if (icon) {
+        icon.className = collapsed ? 'ti ti-layout-sidebar-right' : 'ti ti-menu-2';
+        icon.style.fontSize = '18px';
+      }
+    });
+    var isCollapsed = document.body.classList.contains('sb-collapsed');
+    btn.title = isCollapsed ? 'Expandir menu' : 'Recolher menu';
+    var icon = btn.querySelector('i');
+    if (icon && isCollapsed) {
+      icon.className = 'ti ti-layout-sidebar-right';
+      icon.style.fontSize = '18px';
+    }
+  });
+})();
+
+/* ── Status pill radio/checkbox handling ───────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.status-pill').forEach(function(lbl) {
+    lbl.addEventListener('click', function() {
+      var input = this.querySelector('input[type="radio"]');
+      if (!input) return;
+      var name = input.name;
+      document.querySelectorAll('input[name="' + name + '"]').forEach(function(i) {
+        var l = i.closest('label');
+        if (!l) return;
+        l.style.borderColor = 'transparent';
+        l.style.opacity = '0.55';
+      });
+      this.style.borderColor = '';
+      this.style.opacity = '1';
+    });
+  });
+});
+
+/* ── Modal helpers (legacy: abrirModal / fecharModal) ─── */
+function abrirModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('hidden');
+}
+function fecharModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('[id^="modal-"]').forEach(function(m) {
+      m.classList.add('hidden');
+    });
+  }
+});
+</script>
+</body>
+</html>

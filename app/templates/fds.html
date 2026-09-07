@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Fim de Semana — CondoReservas{% endblock %}
+{% block page_title %}Fim de Semana{% endblock %}
+
+{% block content %}
+<style>
+@media print {
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area {
+    position: fixed; top: 0; left: 0; width: 100%;
+    background: #fff !important; color: #000 !important;
+    font-family: Arial, sans-serif;
+  }
+
+  /* Título da data — borda preta espessa (P&B) */
+  #print-area .print-titulo {
+    display: block !important;
+    background: #fff !important;
+    border: 3px solid #000 !important;
+    color: #000 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    padding: 8px !important;
+    letter-spacing: 0.05em !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #print-area .print-titulo-inner { display: none !important; }
+  #print-area .print-titulo-text { display: block !important; }
+
+  /* Dia da semana — fundo cinza escuro com texto branco */
+  #print-area .print-dia {
+    display: block !important;
+    background: #333 !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 5px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Tabela */
+  #print-area table {
+    font-size: 11px;
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  /* Header da tabela — fundo cinza médio */
+  #print-area thead tr {
+    background: #bbb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #print-area thead th {
+    background: #bbb !important;
+    color: #000 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    border: 1px solid #000 !important;
+    padding: 5px 8px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Células de dados */
+  #print-area td {
+    border: 1px solid #555 !important;
+    padding: 5px 8px !important;
+    color: #000 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+  }
+
+  /* Coluna TERMO */
+  #print-area td:first-child {
+    font-weight: 800 !important;
+    font-size: 10px !important;
+    text-align: center !important;
+    border-right: 2px solid #000 !important;
+  }
+
+  /* Coluna CONDOMÍNIO — destaque máximo */
+  #print-area td:nth-child(2) {
+    font-weight: 800 !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+  }
+
+  /* HORA — destaque */
+  #print-area td:nth-child(6) {
+    font-weight: 800 !important;
+    font-size: 12px !important;
+    text-align: center !important;
+  }
+
+  /* input de hora — mostrar só o valor */
+  #print-area input {
+    border: none !important;
+    background: transparent !important;
+    color: #000 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    width: auto !important;
+    text-align: center !important;
+  }
+
+  /* Vistoria vésp — sem cor, negrito */
+  #print-area span[style*="color:#f59e0b"] {
+    color: #000 !important;
+    font-weight: 900 !important;
+  }
+
+  /* Zebra P&B nas linhas */
+  #print-area tbody tr:nth-child(even) {
+    background: #eee !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Espaço entre blocos de data */
+  #print-area > div { margin-bottom: 20px !important; }
+}
+</style>
+
+<div style="max-width:960px;margin:0 auto;padding:4px 0 32px">
+
+  <!-- ── Page header ───────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+    <div style="width:38px;height:38px;border-radius:11px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-calendar-week" style="font-size:18px;color:#60a5fa"></i>
+    </div>
+    <div>
+      <h1 style="font-size:20px;font-weight:700;color:#ebebeb;margin:0 0 2px">Relatório de Fim de Semana</h1>
+      <p style="font-size:13px;color:#909090;margin:0">Reservas de sábado e domingo</p>
+    </div>
+  </div>
+
+  <!-- ── Filtro ─────────────────────────────────────────────── -->
+  <div class="no-print" style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;margin-bottom:24px">
+    <div style="padding:18px 24px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+      <span style="font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em">Período</span>
+    </div>
+    <div style="padding:20px 24px">
+      <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+
+        <div>
+          <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">De</label>
+          <input type="date" name="inicio" value="{{ data_inicio.isoformat() }}"
+            style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <div>
+          <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Até</label>
+          <input type="date" name="fim" value="{{ data_fim.isoformat() }}"
+            style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);display:inline-flex;align-items:center;gap:6px"
+          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)'">
+          <i class="ti ti-filter" style="font-size:13px"></i> Filtrar
+        </button>
+
+        <button type="button" onclick="window.print()"
+          style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);color:#ebebeb;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;cursor:pointer;transition:all 0.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.18)';this.style.background='rgba(255,255,255,0.04)'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='#152338'">
+          <i class="ti ti-printer" style="font-size:13px"></i> Imprimir
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Conteúdo ───────────────────────────────────────────── -->
+  <div id="print-area">
+  {% if not reservas %}
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:64px 24px;text-align:center">
+    <i class="ti ti-calendar-off" style="font-size:32px;color:#4a6580;display:block;margin-bottom:12px"></i>
+    <p style="color:#4a6580;font-size:14px;margin:0">Nenhuma reserva de fim de semana no período.</p>
+  </div>
+
+  {% else %}
+  {% set dias = ['SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO','DOMINGO'] %}
+  {% set datas_vistas = namespace(lista=[]) %}
+  {% for r in reservas %}
+    {% if r.dia_fds_efetivo not in datas_vistas.lista %}
+      {% set _ = datas_vistas.lista.append(r.dia_fds_efetivo) %}
+    {% endif %}
+  {% endfor %}
+
+  {% for data in datas_vistas.lista %}
+    {% set grupo = reservas | selectattr('dia_fds_efetivo', 'equalto', data) | list %}
+    <div style="margin-bottom:32px;background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden">
+
+      <!-- Título data (screen) -->
+      <div class="print-titulo" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;{% if data.weekday() == 6 %}background:rgba(139,92,246,0.09);border-bottom:1px solid rgba(139,92,246,0.16){% else %}background:rgba(59,130,246,0.08);border-bottom:1px solid rgba(59,130,246,0.16){% endif %}">
+        <span class="print-titulo-text" style="display:none">VISTORIA {{ data.strftime('%d/%m/%Y') }}</span>
+        <div class="print-titulo-inner" style="display:flex;align-items:center;gap:8px">
+          <i class="ti ti-eye" style="font-size:14px;{% if data.weekday() == 6 %}color:#a78bfa{% else %}color:#60a5fa{% endif %}"></i>
+          <span style="font-size:13px;font-weight:700;{% if data.weekday() == 6 %}color:#a78bfa{% else %}color:#60a5fa{% endif %}">VISTORIA {{ data.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <div class="print-titulo-inner" style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#3D5A7A;font-weight:500">{{ dias[data.weekday()] }}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;{% if data.weekday() == 6 %}background:rgba(139,92,246,0.12);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.2){% else %}background:rgba(59,130,246,0.1);color:#60a5fa;border:0.5px solid rgba(59,130,246,0.2){% endif %}">{{ grupo|length }} vistoria{% if grupo|length != 1 %}s{% endif %}</span>
+        </div>
+      </div>
+
+      <!-- Dia da semana (print only) -->
+      <div class="print-dia" style="display:none">{{ dias[data.weekday()] }}</div>
+
+      <!-- Tabela -->
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:rgba(255,255,255,0.05)">
+            <th style="width:70px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:center"></th>
+            <th style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:left">Condomínio</th>
+            <th style="width:60px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:center">APT</th>
+            <th style="width:70px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:center">Festa</th>
+            <th style="width:70px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:center">Vistoria</th>
+            <th style="width:60px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:center">Hora</th>
+            <th style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:left">Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in grupo %}
+          <tr style="{% if loop.index is even %}background:rgba(255,255,255,0.02){% endif %}">
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#60a5fa;font-weight:600;text-align:center">TERMO</td>
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#ebebeb;text-align:left">{{ r.salao.condominio.nome }}</td>
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;text-align:center">{{ r.apartamento or '—' }}</td>
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#909090;text-align:center">{{ r.data_festa.strftime('%d/%m') }}</td>
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);text-align:center">
+              {% if r.tipo_fds == 'revistoria' %}
+                <span style="color:#a78bfa;font-weight:600" title="Fiscal próprio do condomínio cobre a vistoria de antes (seg-sáb) — só a revistoria é da Administradora">
+                  {{ r.dia_fds_efetivo.strftime('%d/%m') }} <span style="font-size:10px">revist.</span>
+                </span>
+              {% elif r.data_vistoria %}
+                {% if r.data_vistoria != r.data_festa %}
+                  <span style="color:#f59e0b;font-weight:600" title="Vistoria em dia diferente da festa">
+                    {{ r.data_vistoria.strftime('%d/%m') }} <span style="font-size:10px">vésp.</span>
+                  </span>
+                {% else %}
+                  <span style="color:#909090">{{ r.data_vistoria.strftime('%d/%m') }}</span>
+                {% endif %}
+              {% else %}
+                <span style="color:#4a6580">—</span>
+              {% endif %}
+            </td>
+            <td style="padding:6px 8px;border-bottom:0.5px solid rgba(255,255,255,0.05);text-align:center">
+              <input type="text"
+                class="hora-in"
+                data-id="{{ r.id }}"
+                value="{{ r.hora_vistoria or '' }}"
+                placeholder="—"
+                maxlength="5"
+                style="width:52px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.15);color:#ebebeb;font-size:12px;text-align:center;outline:none;padding:2px 4px;transition:border-color 0.15s"
+                onfocus="this.style.borderColor='rgba(46,95,138,0.6)'"
+                onblur="this.style.borderColor='rgba(255,255,255,0.15)'">
+            </td>
+            <td style="padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.05);color:#4a6580;text-align:left"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+  {% endfor %}
+  {% endif %}
+  </div>
+
+</div>
+<script>
+(function () {
+  function saveHora(input) {
+    const id  = input.dataset.id;
+    const val = input.value.trim();
+    fetch('/api/reservas/' + id + '/gep_obs', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ hora_vistoria: val })
+    })
+    .then(r => { if (!r.ok) throw new Error(); })
+    .then(() => {
+      input.style.borderColor = 'rgba(74,222,128,0.6)';
+      setTimeout(() => input.style.borderColor = 'rgba(255,255,255,0.15)', 900);
+    })
+    .catch(() => alert('Erro ao salvar horário.'));
+  }
+
+  document.querySelectorAll('.hora-in').forEach(inp => {
+    inp.addEventListener('blur', e => saveHora(e.target));
+    inp.addEventListener('keypress', e => {
+      if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    });
+  });
+})();
+</script>
+{% endblock %}

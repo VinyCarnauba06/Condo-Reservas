@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — {{ salao.nome }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; -webkit-font-smoothing: antialiased; background: #0c1828; color: #ebebeb; padding: 16px; }
+
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.back-btn { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: #909090; text-decoration: none; flex-shrink: 0; }
+.topbar-info h1 { font-size: 16px; font-weight: 700; margin: 0; }
+.topbar-info p  { font-size: 11px; color: #4a6580; margin: 2px 0 0; }
+
+.flash { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+/* Adicionar item */
+.add-card { background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 14px 16px; margin-bottom: 20px; }
+.add-card h2 { font-size: 12px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+.add-row { display: flex; gap: 8px; }
+.add-row input { flex: 1; background: #0c1828; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 10px; color: #ebebeb; font-family: inherit; font-size: 14px; padding: 11px 12px; outline: none; -webkit-appearance: none; }
+.add-row input:focus { border-color: rgba(96,165,250,0.5); }
+.btn-add { padding: 11px 16px; border-radius: 10px; border: none; background: #2563eb; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* Item card */
+.item-card { background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+.item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.item-nome { font-size: 14px; font-weight: 700; color: #ebebeb; margin: 0; }
+.btn-remover { background: rgba(127,29,29,0.2); border: 0.5px solid rgba(239,68,68,0.2); border-radius: 8px; color: #fca5a5; font-size: 12px; font-weight: 700; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+.section-title { font-size: 11px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+.empty { text-align: center; padding: 32px 20px; color: #4a6580; font-size: 13px; }
+.empty .ti { font-size: 30px; display: block; margin-bottom: 8px; color: #1e3a5f; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <a href="{{ url_for('fiscal_fixo.portal') }}" class="back-btn"><svg class="ti ti-arrow-left"><use href="#ti-arrow-left"></use></svg></a>
+  <div class="topbar-info">
+    <h1>{{ salao.nome }}</h1>
+    <p>Inventário</p>
+  </div>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {{ cat }}"><svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> {{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{# ── Adicionar item ── #}
+<div class="add-card">
+  <h2>Adicionar item</h2>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="acao" value="adicionar_item">
+    <div class="add-row">
+      <input type="text" name="descricao" placeholder="ex: TV 65'', Sofá branco..." maxlength="200" required autocomplete="off">
+      <button type="submit" class="btn-add"><svg class="ti ti-plus"><use href="#ti-plus"></use></svg> Adicionar</button>
+    </div>
+  </form>
+</div>
+
+<p class="section-title">Itens ({{ itens|length }})</p>
+
+{% if itens %}
+  {% for item in itens %}
+  <div class="item-card">
+    <div class="item-header">
+      <p class="item-nome">{{ item.descricao }}</p>
+      <form method="POST" style="margin:0" onsubmit="return confirm('Remover {{ item.descricao }}?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="acao" value="remover_item">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <button type="submit" class="btn-remover"><svg class="ti ti-trash"><use href="#ti-trash"></use></svg> Remover</button>
+      </form>
+    </div>
+
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <svg class="ti ti-list-search"><use href="#ti-list-search"></use></svg>
+    Nenhum item cadastrado ainda
+  </div>
+{% endif %}
+
+</body>
+</html>

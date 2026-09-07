@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+instance/
+.env
+venv/
+reset_producao.py
+.venv/
+logs/
+backups/
+backups/*.db.enc
+backups/*.sql.enc
+.claude
+.venv-report/

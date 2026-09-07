@@ -1,0 +1,21 @@
+﻿{% extends 'base.html' %}
+{% block title %}Acesso Negado — CondoReservas{% endblock %}
+{% block page_title %}Acesso Negado{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:60px auto;text-align:center">
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:24px;padding:48px 40px">
+    <div style="width:64px;height:64px;border-radius:18px;background:rgba(121,31,31,0.15);border:0.5px solid rgba(121,31,31,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+      <i class="ti ti-lock" style="font-size:28px;color:#d07070"></i>
+    </div>
+    <h1 style="font-family:'DM Serif Display',serif;font-size:26px;color:#ebebeb;margin:0 0 8px">Acesso Negado</h1>
+    <p style="font-size:13px;color:#4a6580;margin:0 0 28px;line-height:1.6">Você não tem permissão para acessar esta página. Entre em contato com o administrador do sistema.</p>
+    <a href="{{ url_for('condominios.home') }}"
+      style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 24px;border-radius:12px;text-decoration:none;transition:all 0.2s;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)"
+      onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+      <i class="ti ti-home" style="font-size:14px"></i> Voltar ao início
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Fiscal — CondoReservas</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<script src="{{ url_for('static', filename='js/vistoria-offline.js') }}"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  background: #0c1828;
+  color: #ebebeb;
+  padding: 16px;
+}
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 10px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(59,130,246,0.12); border: 0.5px solid rgba(46,95,138,0.3);
+  display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 18px; flex-shrink: 0;
+}
+.topbar h1 { font-size: 15px; font-weight: 700; margin: 0; color: #ebebeb; }
+.topbar p { font-size: 11px; color: #4a6580; margin: 2px 0 0; text-transform: capitalize; }
+.logout-btn {
+  width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  color: #909090; text-decoration: none; flex-shrink: 0;
+}
+
+.flash {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; margin-bottom: 14px;
+}
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+.card {
+  background: #111e30; border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+}
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.condominio { font-size: 14px; font-weight: 700; color: #ebebeb; margin: 0; }
+.salao { font-size: 12px; color: #4a6580; margin: 2px 0 0; }
+.dia-badge {
+  font-size: 11px; font-weight: 700; color: #60a5fa; background: rgba(59,130,246,0.12);
+  border: 0.5px solid rgba(46,95,138,0.3); padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+}
+.antecipada-tag {
+  display: block; font-size: 9.5px; color: #fbbf24; margin-top: 3px; text-align: center; font-weight: 700;
+}
+
+/* [FEATURE] linha de destaque: hora marcada + nome + telefone juntos, bem
+   grandes — a informação que o fiscal precisa ver de cara no card. */
+.destaque-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 12px; }
+.destaque-hora { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 800; color: #fbbf24; }
+.destaque-nome { font-size: 16px; font-weight: 800; color: #ebebeb; line-height: 1.3; }
+.destaque-tel { font-size: 15px; font-weight: 700; color: #60a5fa; text-decoration: none; }
+.destaque-sep { color: #3d4f63; font-weight: 700; }
+
+.acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip {
+  flex: 1; text-align: center; font-size: 12px; font-weight: 700; padding: 10px 8px;
+  border-radius: 10px; text-decoration: none; min-width: 100px;
+}
+.chip.pendente { background: #152338; color: #909090; border: 0.5px solid rgba(255,255,255,0.08); }
+.chip.feito { background: rgba(34,197,94,0.15); color: #4ade80; border: 0.5px solid rgba(34,197,94,0.25); }
+.chip.travado { background: #0e1826; color: #3d4f63; border: 0.5px solid rgba(255,255,255,0.04); cursor: not-allowed; }
+
+.pdf-btn {
+  width: 40px; height: 40px; border-radius: 10px; background: #152338;
+  border: 0.5px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  color: #d07070; text-decoration: none; flex-shrink: 0;
+}
+
+.empty-state { text-align: center; padding: 32px 20px; color: #4a6580; font-size: 12.5px; }
+.empty-state .ti { font-size: 28px; display: block; margin-bottom: 10px; opacity: 0.5; }
+
+.tabs {
+  display: flex; gap: 6px; background: #111e30; border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 5px; margin-bottom: 16px;
+}
+.tab-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: none; border: none; color: #4a6580; font-family: inherit; font-size: 12.5px;
+  font-weight: 700; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+}
+.tab-btn .count { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 100px; background: rgba(255,255,255,0.06); color: #4a6580; }
+.tab-btn.active { background: #2563EB; color: #fff; }
+.tab-btn.active .count { background: rgba(255,255,255,0.2); color: #fff; }
+.painel-dia { display: none; }
+.painel-dia.active { display: block; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <div class="topbar-left">
+    {% if eh_admin_visitando %}
+    <a href="{{ url_for('relatorios.relatorio_semanal') }}" class="logout-btn"><svg class="ti ti-arrow-left"><use href="#ti-arrow-left"></use></svg></a>
+    {% endif %}
+    <div class="topbar-icon"><svg class="ti ti-clipboard-check"><use href="#ti-clipboard-check"></use></svg></div>
+    <div>
+      <h1>{{ 'Painel do Coordenador' if eh_coordenador else 'Painel do Fiscal' }}</h1>
+      <p>{{ hoje_extenso }}</p>
+    </div>
+  </div>
+  <a href="{{ url_for('auth.logout') }}" class="logout-btn"><svg class="ti ti-logout"><use href="#ti-logout"></use></svg></a>
+</div>
+
+{% if eh_coordenador %}
+{# [FEATURE] atalhos só do coordenador — definir fiscal fixo por
+   condomínio e baixar o relatório de limpeza da semana (não o recibo de
+   zelador, esse continua fora do alcance daqui). #}
+<div style="display:flex;gap:8px;margin-bottom:16px">
+  <a href="{{ url_for('vistorias.fiscais_por_condominio') }}"
+    style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:#60a5fa;background:rgba(59,130,246,0.1);border:0.5px solid rgba(46,95,138,0.3);border-radius:12px;padding:10px;text-decoration:none">
+    <svg class="ti ti-users"><use href="#ti-users"></use></svg> Fiscais por condomínio
+  </a>
+  <a href="{{ url_for('relatorios.relatorio_semanal', pdf_limpeza=1) }}" target="_blank"
+    style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:#4ade80;background:rgba(34,197,94,0.1);border:0.5px solid rgba(34,197,94,0.25);border-radius:12px;padding:10px;text-decoration:none">
+    <svg class="ti ti-file-download"><use href="#ti-file-download"></use></svg> Relatório de limpeza
+  </a>
+</div>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="flash {{ category }}">
+    <svg class="ti ti-alert-circle"><use href="#ti-alert-circle"></use></svg> {{ message }}
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<!-- [FEATURE] vistoria offline — some se não tiver pendência nenhuma no IndexedDB -->
+<div id="vistoria-pendentes-banner" class="flash" style="display:none;background:rgba(245,158,11,0.12);border:0.5px solid rgba(245,158,11,0.35);color:#fbbf24">
+  <svg class="ti ti-cloud-off"><use href="#ti-cloud-off"></use></svg> <span id="vistoria-pendentes-texto"></span>
+</div>
+
+{% macro vistoria_card(reserva, tipo, eh_fds) %}
+{# [TESTE] tipo é 'vistoria' ou 'revistoria' — cada card já sabe qual ação é
+   dele (a lista que o chamou já filtrou isso), não tenta mais adivinhar as
+   duas ações misturadas num card só. #}
+{% set feitas = reserva.vistorias_termo|map(attribute='momento')|list %}
+{% set minha = reserva.fiscal_responsavel_id == usuario_id %}
+{% set termo_atual = reserva.vistorias_termo|selectattr('momento', 'equalto', tipo)|first %}
+{% set qtd_fotos = termo_atual.fotos|length if termo_atual else 0 %}
+<div class="card">
+  <div class="card-top">
+    <div>
+      <p class="condominio">{{ reserva.salao.condominio.nome }}</p>
+      <p class="salao">{{ reserva.salao.nome }}</p>
+    </div>
+    <div style="text-align:right">
+      <span class="dia-badge">{{ reserva.data_festa.strftime('%d/%m') }}</span>
+      {% if tipo == 'vistoria' and reserva.data_vistoria and reserva.data_festa != reserva.data_vistoria %}
+      <span class="antecipada-tag">vistoria antecipada</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# [FEATURE] pedido do Viny: hora + nome + telefone numa linha só, bem
+     destacada — é a informação que o fiscal mais precisa bater o olho e
+     ver de cara. Vistoria: hora marcada na reserva (reserva.hora_vistoria).
+     Revistoria: não vem da reserva na criação — é combinada com o morador
+     na hora da vistoria e salva em reserva.hora_revistoria, então já
+     aparece aqui de antemão, antes mesmo da revistoria acontecer (só fica
+     em branco se o fiscal esqueceu de combinar/preencher na vistoria). #}
+  <div class="destaque-linha">
+    {% if tipo == 'vistoria' and reserva.hora_vistoria %}
+    <span class="destaque-hora"><svg class="ti ti-clock"><use href="#ti-clock"></use></svg> {{ reserva.hora_vistoria }}</span>
+    <span class="destaque-sep">·</span>
+    {% elif tipo == 'revistoria' and reserva.hora_revistoria %}
+    <span class="destaque-hora"><svg class="ti ti-clock"><use href="#ti-clock"></use></svg> {{ reserva.hora_revistoria }}</span>
+    <span class="destaque-sep">·</span>
+    {% endif %}
+    {% if reserva.festa_condominio %}
+    <span class="destaque-nome">Festa do Condomínio</span>
+    {% else %}
+    <span class="destaque-nome">{{ reserva.nome_solicitante or '—' }}</span>
+    {% if reserva.contato %}
+    <span class="destaque-sep">·</span>
+    <a href="tel:{{ reserva.contato|replace(' ', '')|replace('-', '') }}" class="destaque-tel">{{ reserva.contato }}</a>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  {# [FEATURE] painel consolidado do coordenador: mostra quem é o
+     responsável por essa vistoria/revistoria — reivindicada (fim de
+     semana) ou fixa (dia de semana, do condomínio). Fiscal comum não
+     precisa ver isso (já sabe se é dele pelas próprias regras de acesso). #}
+  {% if eh_coordenador %}
+  <p style="font-size:11px;color:#4a6580;margin:0 0 10px;display:flex;align-items:center;gap:5px">
+    <svg class="ti ti-user-shield" style="font-size:13px"><use href="#ti-user-shield"></use></svg>
+    Responsável:
+    {% if reserva.fiscal_responsavel %}
+      <strong style="color:#93c5fd">{{ reserva.fiscal_responsavel.nome }}</strong>
+    {% elif reserva.salao.condominio.fiscal %}
+      <strong style="color:#93c5fd">{{ reserva.salao.condominio.fiscal.nome }}</strong> <span style="color:#3d4f63">(fixo)</span>
+    {% else %}
+      <span style="color:#f87171">ninguém definido</span>
+    {% endif %}
+  </p>
+  {% endif %}
+
+  {% if eh_fds and not minha and not eh_coordenador %}
+  <form method="POST" action="{{ url_for('vistorias.pegar_vistoria', reserva_id=reserva.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="chip pendente" style="width:100%;border:none;font-family:inherit">
+      <svg class="ti ti-hand-click"><use href="#ti-hand-click"></use></svg> Pegar esta {{ tipo }}
+    </button>
+  </form>
+  {% else %}
+  <div class="acoes">
+    {# [FEATURE] pedido do Viny: botão de vistoria/revistoria feita precisa
+       deixar claro que agora é "visualizar" (ícone de olho), não mais
+       "preencher" (ícone de lápis) — antes os dois estados só mudavam a cor
+       do chip, sem nenhum ícone indicando a ação. #}
+    {% if tipo == 'vistoria' %}
+    {% set feito_v = 'vistoria' in feitas %}
+    <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=reserva.id, momento='vistoria') }}"
+      class="chip {{ 'feito' if feito_v else 'pendente' }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+      <svg class="ti"><use href="#ti-{{ 'eye' if feito_v else 'edit' }}"></use></svg>
+      {{ 'VISTORIA ✓' if feito_v else 'VISTORIA' }}
+    </a>
+    {% else %}
+      {% if 'vistoria' in feitas or not reserva.exige_vistoria_previa %}
+      {% set feito_r = 'revistoria' in feitas %}
+      <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=reserva.id, momento='revistoria') }}"
+        class="chip {{ 'feito' if feito_r else 'pendente' }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+        <svg class="ti"><use href="#ti-{{ 'eye' if feito_r else 'edit' }}"></use></svg>
+        {{ 'REVISTORIA ✓' if feito_r else 'REVISTORIA' }}
+      </a>
+      {% else %}
+      <span class="chip travado" style="flex:1" title="Só libera depois da vistoria concluída">
+        <svg class="ti ti-lock"><use href="#ti-lock"></use></svg> REVISTORIA
+      </span>
+      {% endif %}
+    {% endif %}
+    {# [FIX] Fallback offline: PDF do termo sempre disponível, mesmo sem
+       vistoria digital preenchida ainda — sai em branco (linhas de
+       assinatura tradicionais), pro fiscal baixar/imprimir ANTES de ir pro
+       local, enquanto ainda tem sinal, e usar no papel se não tiver internet. #}
+    <a href="{{ url_for('relatorios.termo_individual', reserva_id=reserva.id) }}" target="_blank"
+      class="pdf-btn" title="{{ 'Baixar PDF assinado' if feitas else 'Baixar termo em branco (fallback sem internet)' }}">
+      <svg class="ti ti-file-pdf"><use href="#ti-file-pdf"></use></svg>
+    </a>
+    {% if qtd_fotos %}
+    {# [TESTE] confirma pro fiscal que a foto que ele tirou realmente salvou
+       — sem isso não tinha nenhum jeito de conferir pelo celular. #}
+    <a href="{{ url_for('relatorios.ver_fotos_vistoria', reserva_id=reserva.id) }}" target="_blank"
+      class="pdf-btn" style="color:#fbbf24" title="Ver {{ qtd_fotos }} foto(s) anexada(s)">
+      <svg class="ti ti-photo"><use href="#ti-photo"></use></svg>
+    </a>
+    {% endif %}
+  </div>
+  {% if eh_fds and minha %}
+  <form method="POST" action="{{ url_for('vistorias.liberar_vistoria', reserva_id=reserva.id) }}" style="margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="chip" style="width:100%;border:none;font-family:inherit;background:transparent;color:#4a6580;font-weight:600">
+      <svg class="ti ti-arrow-back-up"><use href="#ti-arrow-back-up"></use></svg> Liberar (não vou fazer)
+    </button>
+  </form>
+  {% endif %}
+  {# [FEATURE] pedido do Viny: coordenador/admin designa qual fiscal cobre
+     essa vistoria/revistoria (troca de plantão de última hora, fiscal
+     escalado que não pode ir, etc.) — em vez de só reivindicar pra si
+     mesmo, escolhe entre os fiscais ativos. Libera de volta continua igual,
+     em qualquer dia — não só fim de semana. #}
+  {% if eh_coordenador %}
+  <form method="POST" action="{{ url_for('vistorias.designar_fiscal', reserva_id=reserva.id) }}"
+    style="display:flex;gap:8px;margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="fiscal_id"
+      style="flex:1;min-width:0;background:#152338;color:#ebebeb;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;font-family:inherit;font-size:12px;font-weight:700">
+      <option value="">Designar fiscal…</option>
+      {% for f in fiscais %}
+      <option value="{{ f.id }}" {{ 'selected' if reserva.fiscal_responsavel_id == f.id else '' }}>{{ f.nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="chip" style="flex:0 0 auto;width:auto;padding:10px 14px;border:0.5px solid rgba(59,130,246,0.3);font-family:inherit;background:rgba(59,130,246,0.08);color:#60a5fa;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+      <svg class="ti ti-user-check"><use href="#ti-user-check"></use></svg> Designar
+    </button>
+  </form>
+  {% if reserva.fiscal_responsavel_id %}
+  <form method="POST" action="{{ url_for('vistorias.liberar_vistoria', reserva_id=reserva.id) }}" style="margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="chip" style="width:100%;border:none;font-family:inherit;background:transparent;color:#4a6580;font-weight:600">
+      <svg class="ti ti-arrow-back-up"><use href="#ti-arrow-back-up"></use></svg> Liberar responsável
+    </button>
+  </form>
+  {% endif %}
+  {% endif %}
+  {% endif %}
+
+  {# [FEATURE] morador desiste da festa na hora, na frente do fiscal — precisa
+     cancelar ali mesmo, sem esperar chegar num operador. Motivo obrigatório
+     via prompt() pra ficar registrado no Historico/AuditLog. #}
+  <form method="POST" action="{{ url_for('reservas.cancelar_reserva', id=reserva.id) }}"
+    class="form-cancelar-fiscal" style="margin-top:8px" onsubmit="return confirmarCancelamento(this)">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="observacao_cancelamento" class="obs-cancelamento">
+    <button type="submit" class="chip" style="width:100%;border:0.5px solid rgba(239,68,68,0.35);font-family:inherit;background:rgba(239,68,68,0.08);color:#f87171;font-weight:700">
+      <svg class="ti ti-x"><use href="#ti-x"></use></svg> Cancelar festa
+    </button>
+  </form>
+</div>
+{% endmacro %}
+
+{% macro secao_titulo(titulo, qtd, icone, tipo) %}
+{# [FEATURE] pedido do Viny: divisão vistoria/revistoria mais marcada —
+   cada tipo ganha sua própria cor de destaque (azul = vistoria, roxo =
+   revistoria) num cabeçalho com fundo e borda, em vez de só um label cinza. #}
+{% set cor = '#a78bfa' if tipo == 'revistoria' else '#60a5fa' %}
+{% set cor_bg = 'rgba(167,139,250,0.10)' if tipo == 'revistoria' else 'rgba(59,130,246,0.10)' %}
+{% set cor_borda = 'rgba(167,139,250,0.3)' if tipo == 'revistoria' else 'rgba(59,130,246,0.3)' %}
+<div style="display:flex;align-items:center;gap:8px;margin:22px 0 10px;padding:9px 12px;background:{{ cor_bg }};border:0.5px solid {{ cor_borda }};border-left:3px solid {{ cor }};border-radius:10px">
+  <svg class="ti" style="font-size:14px;color:{{ cor }}"><use href="#ti-{{ icone }}"></use></svg>
+  <span style="font-size:11.5px;font-weight:800;color:{{ cor }};text-transform:uppercase;letter-spacing:0.08em">{{ titulo }}</span>
+  <span style="font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:{{ cor }}">{{ qtd }}</span>
+</div>
+{% endmacro %}
+
+{% macro bloco_dia(titulo_extenso, vistorias, revistorias, vazio_msg) %}
+{# [FEATURE] pedido do Viny: fim de semana mais organizado — sábado e
+   domingo cada um dentro do seu próprio bloco (fundo + borda + cabeçalho
+   com data), em vez de um label de texto solto seguido de listas coladas
+   uma na outra. Fica claro onde um dia termina e o outro começa. #}
+<div style="background:#0e1826;border:0.5px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;margin-bottom:14px">
+  <div style="display:flex;align-items:center;gap:8px;padding-bottom:12px;margin-bottom:2px;border-bottom:0.5px solid rgba(255,255,255,0.07)">
+    <svg class="ti" style="font-size:15px;color:#93c5fd"><use href="#ti-calendar-event"></use></svg>
+    <span style="font-size:13px;font-weight:800;color:#ebebeb;text-transform:capitalize">{{ titulo_extenso }}</span>
+  </div>
+  {% if not vistorias and not revistorias %}
+    <div class="empty-state" style="padding:16px 20px 4px">
+      <svg class="ti ti-calendar-off"><use href="#ti-calendar-off"></use></svg>
+      {{ vazio_msg }}
+    </div>
+  {% else %}
+    {% if vistorias %}
+      {{ secao_titulo('Vistorias', vistorias|length, 'eye', 'vistoria') }}
+      {% for reserva in vistorias %}
+        {{ vistoria_card(reserva, 'vistoria', true) }}
+      {% endfor %}
+    {% endif %}
+    {% if revistorias %}
+      {{ secao_titulo('Revistorias', revistorias|length, 'eye-check', 'revistoria') }}
+      {% for reserva in revistorias %}
+        {{ vistoria_card(reserva, 'revistoria', true) }}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+<div class="tabs">
+  <button type="button" class="tab-btn active" data-tab="hoje" onclick="mostrarDia('hoje')">
+    Hoje <span class="count">{{ vistorias_hoje|length + revistorias_hoje|length }}</span>
+  </button>
+  <button type="button" class="tab-btn" data-tab="amanha" onclick="mostrarDia('amanha')">
+    Amanhã <span class="count">{{ vistorias_amanha|length + revistorias_amanha|length }}</span>
+  </button>
+  {% if eh_coordenador %}
+  <button type="button" class="tab-btn" data-tab="fds" onclick="mostrarDia('fds')">
+    Fim de Semana <span class="count">{{ vistorias_sabado|length + revistorias_sabado|length + vistorias_domingo|length + revistorias_domingo|length }}</span>
+  </button>
+  {% endif %}
+</div>
+
+<div class="painel-dia active" id="painel-hoje">
+  {% if eh_fds_hoje %}
+  <p style="font-size:11px; color:#fbbf24; margin:0 0 12px; text-align:center;">
+    <svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> Fim de semana — escolha as vistorias que você vai fazer.
+  </p>
+  {% endif %}
+  {% if not vistorias_hoje and not revistorias_hoje %}
+    <div class="empty-state">
+      <svg class="ti ti-calendar-off"><use href="#ti-calendar-off"></use></svg>
+      Nada pra hoje.
+    </div>
+  {% else %}
+    {% if vistorias_hoje %}
+      {{ secao_titulo('Vistorias', vistorias_hoje|length, 'eye', 'vistoria') }}
+      {% for reserva in vistorias_hoje %}
+        {{ vistoria_card(reserva, 'vistoria', eh_fds_hoje) }}
+      {% endfor %}
+    {% endif %}
+    {% if revistorias_hoje %}
+      {{ secao_titulo('Revistorias', revistorias_hoje|length, 'eye-check', 'revistoria') }}
+      {% for reserva in revistorias_hoje %}
+        {{ vistoria_card(reserva, 'revistoria', eh_fds_hoje) }}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="painel-dia" id="painel-amanha">
+  <p style="font-size:11px; color:#4a6580; margin:0 0 12px; text-align:center;">{{ amanha_extenso }}</p>
+  {% if eh_fds_amanha %}
+  <p style="font-size:11px; color:#fbbf24; margin:0 0 12px; text-align:center;">
+    <svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> Fim de semana — escolha as vistorias que você vai fazer.
+  </p>
+  {% endif %}
+  {% if not vistorias_amanha and not revistorias_amanha %}
+    <div class="empty-state">
+      <svg class="ti ti-calendar-off"><use href="#ti-calendar-off"></use></svg>
+      Nada pra amanhã ainda.
+    </div>
+  {% else %}
+    {% if vistorias_amanha %}
+      {{ secao_titulo('Vistorias', vistorias_amanha|length, 'eye', 'vistoria') }}
+      {% for reserva in vistorias_amanha %}
+        {{ vistoria_card(reserva, 'vistoria', eh_fds_amanha) }}
+      {% endfor %}
+    {% endif %}
+    {% if revistorias_amanha %}
+      {{ secao_titulo('Revistorias', revistorias_amanha|length, 'eye-check', 'revistoria') }}
+      {% for reserva in revistorias_amanha %}
+        {{ vistoria_card(reserva, 'revistoria', eh_fds_amanha) }}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+
+{% if eh_coordenador %}
+<div class="painel-dia" id="painel-fds">
+  {{ bloco_dia(sabado_extenso, vistorias_sabado, revistorias_sabado, 'Nada pro sábado.') }}
+  {{ bloco_dia(domingo_extenso, vistorias_domingo, revistorias_domingo, 'Nada pro domingo.') }}
+</div>
+{% endif %}
+
+<script>
+function mostrarDia(dia) {
+  document.querySelectorAll('.painel-dia').forEach(function (el) {
+    el.classList.toggle('active', el.id === 'painel-' + dia);
+  });
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.classList.toggle('active', btn.dataset.tab === dia);
+  });
+}
+
+function confirmarCancelamento(form) {
+  var motivo = prompt('Motivo do cancelamento (ex: morador desistiu no local):', '');
+  if (motivo === null) return false; // apertou cancelar no prompt
+  form.querySelector('.obs-cancelamento').value = motivo.trim() || 'Cancelada pelo fiscal no local';
+  return confirm('Confirma o cancelamento dessa festa? Não dá pra desfazer depois.');
+}
+
+// [FEATURE] vistoria offline — registra o SW aqui também (idempotente, caso
+// o fiscal abra o painel antes de qualquer formulário de vistoria), tenta
+// sincronizar pendências assim que reconectar, e avisa quantas tem na fila
+// pra ele não achar que o trabalho sumiu.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-vistoria.js', { scope: '/' }).catch(function () {});
+}
+
+function atualizarBannerPendentes() {
+  vistoriaContarStatus().then(function (st) {
+    var banner = document.getElementById('vistoria-pendentes-banner');
+    var texto  = document.getElementById('vistoria-pendentes-texto');
+    if (st.total === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+    var partes = [];
+    if (st.aguardando > 0) {
+      partes.push(st.aguardando === 1
+        ? '1 vistoria salva no celular, aguardando internet pra enviar.'
+        : st.aguardando + ' vistorias salvas no celular, aguardando internet pra enviar.');
+    }
+    if (st.falhou > 0) {
+      // [FIX] fila fantasma: essas o servidor recusou várias vezes (sessão/
+      // token vencido, etc.) — não adianta esperar, precisa de ação humana.
+      partes.push('⚠️ ' + st.falhou + (st.falhou === 1 ? ' vistoria não foi aceita pelo sistema' : ' vistorias não foram aceitas pelo sistema')
+        + ' — avise o administrador e, se precisar, registre no papel.');
+      banner.style.background = 'rgba(239,68,68,0.14)';
+      banner.style.borderColor = 'rgba(239,68,68,0.4)';
+      banner.style.color = '#fca5a5';
+    }
+    texto.textContent = partes.join(' ');
+    banner.style.display = 'flex';
+  }).catch(function () {});
+}
+
+function tentarSincronizar() {
+  flushPendentes().then(atualizarBannerPendentes);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  atualizarBannerPendentes();
+  if (navigator.onLine) tentarSincronizar();
+});
+window.addEventListener('online', tentarSincronizar);
+</script>
+
+</body>
+</html>

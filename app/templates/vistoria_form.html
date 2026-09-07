@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{{ 'Vistoria' if momento == 'vistoria' else 'Revistoria' }} — CondoReservas</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<script src="{{ url_for('static', filename='js/signature_pad.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vistoria-offline.js') }}"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  background: #0c1828;
+  color: #ebebeb;
+  padding: 16px;
+  padding-bottom: 100px;
+}
+/* [FEATURE] barra de progresso fixa — orienta o fiscal numa tela longa,
+   mostrando em qual seção ele está e deixando pular direto pra outra. */
+.progress-bar {
+  position: sticky; top: 0; z-index: 5; display: flex; gap: 4px;
+  background: #0c1828; padding: 8px 0 12px; margin: -16px -16px 14px; padding-left: 16px; padding-right: 16px;
+}
+.progress-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none; font-family: inherit; cursor: pointer; padding: 0;
+}
+.progress-step .dot {
+  width: 100%; height: 4px; border-radius: 100px; background: rgba(255,255,255,0.08);
+  transition: background 0.2s;
+}
+.progress-step.active .dot { background: #2563EB; }
+.progress-step.done .dot { background: #4ade80; }
+.progress-step .lbl {
+  font-size: 8.5px; font-weight: 700; color: #4a6580; text-transform: uppercase;
+  letter-spacing: 0.03em; text-align: center;
+}
+.progress-step.active .lbl { color: #60a5fa; }
+.progress-step.done .lbl { color: #4ade80; }
+
+/* [FEATURE] banner grande no topo quando falta assinatura — o aviso
+   pequeno embaixo do quadro de assinatura pode ficar fora da tela se o
+   fiscal já rolou pra baixo. Isso aqui não tem como passar despercebido. */
+.erro-topo {
+  display: none; align-items: center; gap: 10px; background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.4); border-radius: 14px; padding: 14px;
+  margin-bottom: 14px; font-size: 13px; font-weight: 700; color: #fca5a5;
+}
+.erro-topo .ti { font-size: 20px; flex-shrink: 0; }
+
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.topbar-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(59,130,246,0.12); border: 0.5px solid rgba(46,95,138,0.3);
+  display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 18px; flex-shrink: 0;
+}
+.topbar h1 { font-size: 15px; font-weight: 700; margin: 0; color: #ebebeb; }
+.topbar p { font-size: 11px; color: #4a6580; margin: 2px 0 0; }
+
+.card {
+  background: #111e30; border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 18px; padding: 16px; margin-bottom: 14px;
+}
+.card h2 {
+  font-size: 12px; font-weight: 700; color: #909090; text-transform: uppercase;
+  letter-spacing: 0.06em; margin: 0 0 12px; display: flex; align-items: center; gap: 6px;
+}
+.info-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+.info-row:last-child { border-bottom: none; }
+.info-row span:first-child { color: #4a6580; }
+.info-row span:last-child { color: #ebebeb; font-weight: 600; text-align: right; }
+
+.flash {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; margin-bottom: 14px;
+}
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+.regras-list { margin: 0; padding-left: 18px; }
+.regras-list li { font-size: 12.5px; line-height: 1.5; color: #cbd5e1; margin-bottom: 10px; }
+.regras-list li:last-child { margin-bottom: 0; }
+
+/* [FEATURE] linha inteira clicável (não só o texto) — <label> envolvendo
+   checkbox + texto, área de toque maior pra quem tem dificuldade no
+   celular. Fundo muda quando desmarcado, pra reforçar visualmente. */
+.item-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 8px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.05); cursor: pointer;
+  margin: 0 -8px; border-radius: 10px; transition: background 0.15s;
+}
+.item-row:active { background: rgba(255,255,255,0.04); }
+.item-row.desmarcado { background: rgba(239,68,68,0.06); }
+.item-row:last-child { border-bottom: none; }
+.item-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: #2563EB; flex-shrink: 0; }
+.item-row span.item-txt { flex: 1; font-size: 13.5px; }
+.item-obs-toggle {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700;
+  color: #60a5fa; background: none; border: none; font-family: inherit; cursor: pointer;
+  padding: 6px 0; margin-top: 2px;
+}
+.item-obs-wrap { display: none; }
+.item-obs-wrap.aberto { display: block; }
+.item-obs-wrap input[type="text"] {
+  width: 100%; margin-top: 6px; padding: 8px 10px; background: #152338;
+  border: 0.5px solid rgba(255,255,255,0.08); border-radius: 8px; color: #ebebeb; font-size: 12px;
+}
+.item-block { padding: 10px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+.item-block:last-child { border-bottom: none; }
+.checklist-instrucao {
+  display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px; color: #93c5fd;
+  background: rgba(59,130,246,0.08); border: 0.5px solid rgba(46,95,138,0.25);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5;
+}
+
+.problema-tag {
+  display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700;
+  color: #fbbf24; margin: 6px 0 4px;
+}
+.check-inline {
+  display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #909090;
+  margin-top: 6px; cursor: pointer;
+}
+.check-inline input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2563EB; flex-shrink: 0; }
+
+.foto-input-btn {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  padding: 10px 16px; border-radius: 10px; background: rgba(59,130,246,0.12);
+  border: 0.5px solid rgba(46,95,138,0.3); color: #60a5fa; cursor: pointer;
+}
+.foto-preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.foto-thumb { position: relative; width: 76px; height: 76px; border-radius: 10px; overflow: hidden; }
+.foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-thumb button {
+  position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); border: none; color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
+}
+.foto-hint { font-size: 11px; color: #4a6580; margin: 0 0 10px; }
+
+textarea, input[type="text"].field-input {
+  width: 100%; padding: 10px 12px; background: #152338;
+  border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px;
+  color: #ebebeb; font-size: 13px; font-family: inherit; outline: none; resize: vertical;
+}
+
+.sig-label { font-size: 11px; color: #909090; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.sig-wrap {
+  background: #fff; border-radius: 12px; overflow: hidden; position: relative;
+  border: 0.5px solid rgba(255,255,255,0.15); touch-action: none;
+}
+.sig-wrap canvas { width: 100%; height: 160px; display: block; touch-action: none; }
+.sig-clear {
+  margin-top: 8px; background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.1);
+  color: #909090; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+}
+.sig-empty-warn { font-size: 11px; color: #f87171; margin-top: 6px; display: none; }
+
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 16px;
+  background: rgba(12,24,40,0.92); backdrop-filter: blur(10px);
+  border-top: 0.5px solid rgba(255,255,255,0.08);
+}
+.btn-submit {
+  width: 100%; padding: 15px; background: linear-gradient(135deg, #2563EB, #1d4ed8);
+  box-shadow: 0 4px 16px rgba(59,130,246,0.25); color: #fff; font-size: 14px; font-weight: 700;
+  border: none; border-radius: 14px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 8px; font-family: inherit;
+}
+label.field-label { display: block; font-size: 11px; font-weight: 700; color: #909090; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; }
+.field { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <div class="topbar-icon"><svg class="ti ti-clipboard-check"><use href="#ti-clipboard-check"></use></svg></div>
+  <div>
+    <h1>{{ 'Vistoria' if momento == 'vistoria' else 'Revistoria' }}</h1>
+    <p>{{ condominio.nome }} — {{ salao.nome }}</p>
+  </div>
+</div>
+
+<!-- [FEATURE] barra de progresso — orienta numa tela longa e deixa pular
+     direto pra uma seção sem precisar rolar tudo. -->
+<div class="progress-bar" id="progress-bar">
+  {% if momento == 'vistoria' %}
+  <button type="button" class="progress-step" data-target="card-checklist">
+    <span class="dot"></span><span class="lbl">Itens</span>
+  </button>
+  <button type="button" class="progress-step" data-target="card-fotos">
+    <span class="dot"></span><span class="lbl">Fotos</span>
+  </button>
+  {% endif %}
+  <button type="button" class="progress-step" data-target="card-observacoes">
+    <span class="dot"></span><span class="lbl">Obs</span>
+  </button>
+  <button type="button" class="progress-step" data-target="card-assinatura-requerente">
+    <span class="dot"></span><span class="lbl">Assin. 1</span>
+  </button>
+  <button type="button" class="progress-step" data-target="card-assinatura-fiscal">
+    <span class="dot"></span><span class="lbl">Assin. 2</span>
+  </button>
+  {% if momento == 'vistoria' %}
+  <button type="button" class="progress-step" data-target="card-hora-revistoria">
+    <span class="dot"></span><span class="lbl">Revistoria</span>
+  </button>
+  {% endif %}
+</div>
+
+<div class="erro-topo" id="erro-topo-banner">
+  <svg class="ti ti-alert-triangle"><use href="#ti-alert-triangle"></use></svg>
+  <span id="erro-topo-texto"></span>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="flash {{ category }}">
+    <svg class="ti ti-alert-circle"><use href="#ti-alert-circle"></use></svg> {{ message }}
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="card">
+  <h2><svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> Dados da Reserva</h2>
+  <div class="info-row"><span>Apartamento</span><span>{{ reserva.apartamento or 'Festa do Condomínio' }}</span></div>
+  <div class="info-row"><span>Data da Festa</span><span>{{ reserva.data_festa.strftime('%d/%m/%Y') }}</span></div>
+  {% if reserva.hora_vistoria %}
+  <div class="info-row"><span>Horário da Vistoria</span><span>{{ reserva.hora_vistoria }}</span></div>
+  {% endif %}
+</div>
+
+{% if preenchido_em_br %}
+<div class="flash info" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:0.5px solid rgba(245,158,11,0.3)">
+  <svg class="ti ti-alert-triangle"><use href="#ti-alert-triangle"></use></svg>
+  {{ 'Vistoria' if momento == 'vistoria' else 'Revistoria' }} já preenchida em {{ preenchido_em_br }}.
+  Enviar de novo substitui os dados anteriores.
+</div>
+{% endif %}
+
+{% if momento == 'vistoria' and regras %}
+<div class="card">
+  <h2><svg class="ti ti-file-text"><use href="#ti-file-text"></use></svg> Regras do Salão</h2>
+  <ol class="regras-list">
+    {% for regra in regras %}
+    <li>{{ regra }}</li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+<form method="POST" id="vistoria-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {# [FEATURE] pedido do Viny: horário (de vistoria ou revistoria) NÃO é
+     editável pelo fiscal em nenhum dos dois momentos — o sistema identifica
+     sozinho o horário de abertura do termo (quando a tela carregou no
+     celular) e manda isso escondido no envio. Sem input visível, sem
+     chance de digitar errado ou esquecer. #}
+  <input type="hidden" name="hora_realizada" id="input-hora-realizada"
+    value="{{ termo_existente.hora_realizada if termo_existente and termo_existente.hora_realizada else '' }}">
+
+  {% if momento == 'vistoria' %}
+  <div class="card" id="card-checklist">
+    <h2><svg class="ti ti-list-check"><use href="#ti-list-check"></use></svg> Checklist do Inventário</h2>
+    {% if itens_inventario %}
+      <div class="checklist-instrucao">
+        <svg class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"><use href="#ti-info-circle"></use></svg>
+        <span><strong>✓ marcado</strong> = está tudo certo. <strong>Toque pra desmarcar</strong> o que estiver com problema ou faltando — aí abre um espaço pra descrever.</span>
+      </div>
+      {% for salao_grupo, itens in grupos_inventario %}
+        {% if itens %}
+          {% if grupos_inventario|length > 1 %}
+          <p style="font-size:11px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.05em;margin:14px 0 4px">{{ salao_grupo.nome }}</p>
+          {% endif %}
+          {% for item in itens %}
+          {% set problema = problemas_map.get((item.salao_id, item.descricao)) %}
+          <div class="item-block">
+            <label class="item-row" data-item-row>
+              <input type="checkbox" name="item_{{ item.id }}" id="item_{{ item.id }}" checked>
+              <span class="item-txt">{{ item.descricao }}</span>
+            </label>
+            {% if problema %}
+            <div class="problema-tag">
+              <svg class="ti ti-alert-triangle"><use href="#ti-alert-triangle"></use></svg>
+              Problema registrado{{ ' · foto já tirada' if problema.verificado else ' · sem foto ainda' }}
+            </div>
+            {% endif %}
+            {% if not problema %}
+            <button type="button" class="item-obs-toggle" data-obs-toggle>
+              <svg class="ti ti-plus"><use href="#ti-plus"></use></svg> Adicionar observação
+            </button>
+            {% endif %}
+            <div class="item-obs-wrap {{ 'aberto' if problema else '' }}" data-obs-wrap>
+              <input type="text" name="obs_item_{{ item.id }}" placeholder="Observação (ex: dano, ausência)..."
+                value="{{ problema.observacao if problema else '' }}">
+              {% if problema %}
+              <label class="check-inline">
+                <input type="checkbox" name="verificado_item_{{ item.id }}" {{ 'checked' if problema.verificado else '' }}>
+                Já tirei foto desse problema (não precisa de novo)
+              </label>
+              <p style="font-size:10px;color:#4a6580;margin:4px 0 0">Apagar o texto acima marca este problema como resolvido.</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <p style="font-size:12px;color:#4a6580;font-style:italic">Inventário não cadastrado para este salão.</p>
+    {% endif %}
+  </div>
+
+  <div class="card" id="card-fotos">
+    <h2><svg class="ti ti-camera"><use href="#ti-camera"></use></svg> Fotos de Problemas (opcional)</h2>
+    <p class="foto-hint">Cadeira quebrada, pintura danificada, etc. Se já tirou foto de um problema antes, não precisa repetir — só marque "já tirei foto" no item acima.</p>
+    <input type="file" accept="image/*" multiple id="foto-input" style="display:none">
+    <button type="button" class="foto-input-btn" onclick="document.getElementById('foto-input').click()">
+      <svg class="ti ti-camera-plus"><use href="#ti-camera-plus"></use></svg> Adicionar foto
+    </button>
+    <div class="foto-preview-grid" id="foto-preview-grid"></div>
+    <div id="foto-hidden-inputs"></div>
+  </div>
+  {% endif %}
+
+  <div class="card" id="card-observacoes">
+    <h2><svg class="ti ti-message-2"><use href="#ti-message-2"></use></svg> Observações Gerais</h2>
+    <textarea name="observacoes" rows="3" placeholder="Observações da vistoria...">{{ (termo_existente.observacoes or '') if termo_existente else '' }}</textarea>
+  </div>
+
+  <div class="card" id="card-assinatura-requerente">
+    <h2><svg class="ti ti-user-check"><use href="#ti-user-check"></use></svg> Assinatura do Requerente</h2>
+    <div class="field">
+      <label class="field-label">Nome de quem assina</label>
+      <input type="text" class="field-input" name="nome_assinante_requerente" maxlength="150"
+        value="{{ termo_existente.nome_assinante_requerente if termo_existente else (reserva.nome_solicitante or '') }}"
+        placeholder="Nome completo">
+    </div>
+    <div class="sig-label">Assinatura</div>
+    <div class="sig-wrap"><canvas id="sig-requerente"></canvas></div>
+    <button type="button" class="sig-clear" data-target="sig-requerente">Limpar assinatura</button>
+    <div class="sig-empty-warn" id="warn-requerente">Assinatura obrigatória.</div>
+  </div>
+
+  <div class="card" id="card-assinatura-fiscal">
+    <h2><svg class="ti ti-shield-check"><use href="#ti-shield-check"></use></svg> Assinatura do Funcionário / Síndico</h2>
+    <div class="sig-label">Assinatura de {{ session.get('usuario_nome', '') }}</div>
+    <div class="sig-wrap"><canvas id="sig-fiscal"></canvas></div>
+    <button type="button" class="sig-clear" data-target="sig-fiscal">Limpar assinatura</button>
+    <div class="sig-empty-warn" id="warn-fiscal">Assinatura obrigatória.</div>
+  </div>
+
+  <input type="hidden" name="assinatura_requerente" id="input-sig-requerente">
+  <input type="hidden" name="assinatura_fiscal" id="input-sig-fiscal">
+
+  {% if momento == 'vistoria' %}
+  {# [FEATURE] pedido do Viny: o fiscal combina o horário da revistoria com
+     o morador NA HORA da vistoria — não é descoberto depois. Esse campo
+     fica embaixo das assinaturas, só existe no formulário de vistoria, e
+     vai pra Reserva.hora_revistoria (não pro termo) porque precisa
+     aparecer no painel do fiscal ANTES da revistoria acontecer, igual o
+     horário marcado da vistoria já aparece hoje. #}
+  <div class="card" id="card-hora-revistoria">
+    <h2><svg class="ti ti-clock"><use href="#ti-clock"></use></svg> Horário da Revistoria</h2>
+    <p style="font-size:11px;color:#4a6580;margin:0 0 8px">Combine com o morador/síndico antes de sair — esse horário vai aparecer destacado pra você amanhã.</p>
+    <div class="field">
+      <label class="field-label">Horário combinado: __:__</label>
+      <input type="time" class="field-input" name="hora_revistoria"
+        value="{{ reserva.hora_revistoria or '' }}">
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer-bar">
+    <button type="submit" class="btn-submit" id="btn-salvar">
+      <svg class="ti ti-device-floppy"><use href="#ti-device-floppy"></use></svg> Salvar {{ 'Vistoria' if momento == 'vistoria' else 'Revistoria' }}
+    </button>
+  </div>
+</form>
+
+<script>
+(function () {
+  function setupPad(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    var ratio  = Math.max(window.devicePixelRatio || 1, 1);
+    var pad = new SignaturePad(canvas, {
+      backgroundColor: '#ffffff',
+      penColor: '#000000',
+      minWidth: 1.8,
+      maxWidth: 3.2,
+    });
+    var largAnterior = 0;
+
+    // [FIX] "assinatura se apagando sozinha" — reatribuir canvas.width/
+    // height SEMPRE limpa o desenho (é assim que <canvas> funciona), e
+    // isso disparava toda vez que o teclado do celular abria/fechava (o
+    // campo "Nome de quem assina" fica logo acima do quadro) ou a barra de
+    // endereço do navegador sumia ao rolar — ambos disparam resize do
+    // viewport. Agora só redimensiona de verdade quando a LARGURA muda de
+    // fato, e salva/restaura o traço em vez de simplesmente perder o que
+    // já tinha sido assinado.
+    function resize() {
+      var novaLargura = canvas.offsetWidth;
+      if (novaLargura === largAnterior) return;
+      largAnterior = novaLargura;
+      var dados = pad.toData();
+      canvas.width  = novaLargura * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext('2d').scale(ratio, ratio);
+      pad.clear();
+      if (dados && dados.length) pad.fromData(dados);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    return pad;
+  }
+
+  var padRequerente = setupPad('sig-requerente');
+  var padFiscal      = setupPad('sig-fiscal');
+
+  // [FEATURE] pedido do Viny: horário de abertura do termo NÃO é editável
+  // pelo fiscal, em vistoria OU revistoria — captura sozinho, sempre. O
+  // horário combinado da revistoria (campo visível, manual) é uma coisa
+  // totalmente diferente: fica só no formulário de vistoria, embaixo das
+  // assinaturas, e vira Reserva.hora_revistoria.
+  (function capturarHoraAbertura() {
+    var input = document.getElementById('input-hora-realizada');
+    if (input && !input.value) {
+      var agora = new Date();
+      var hh = String(agora.getHours()).padStart(2, '0');
+      var mm = String(agora.getMinutes()).padStart(2, '0');
+      input.value = hh + ':' + mm;
+    }
+  })();
+
+  // [FEATURE] checklist mais limpo — observação some por padrão (só some a
+  // sujeira visual quando está tudo ok), abre sozinha quando o fiscal
+  // desmarca o item (sinal de problema), ou pelo botão "+ Observação".
+  document.querySelectorAll('[data-item-row]').forEach(function (row) {
+    var checkbox = row.querySelector('input[type="checkbox"]');
+    var bloco    = row.closest('.item-block');
+    var wrap     = bloco.querySelector('[data-obs-wrap]');
+    var toggle   = bloco.querySelector('[data-obs-toggle]');
+
+    function atualizar() {
+      row.classList.toggle('desmarcado', !checkbox.checked);
+      if (!checkbox.checked) {
+        wrap.classList.add('aberto');
+        if (toggle) toggle.style.display = 'none';
+      }
+    }
+    checkbox.addEventListener('change', atualizar);
+    atualizar(); // estado inicial (cobre item com problema já registrado)
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        wrap.classList.add('aberto');
+        toggle.style.display = 'none';
+      });
+    }
+  });
+
+  // [FEATURE] barra de progresso — destaca a seção visível na tela (scroll)
+  // e deixa pular direto pra qualquer seção clicando no passo.
+  (function setupProgressBar() {
+    var steps = Array.from(document.querySelectorAll('.progress-step'));
+    if (!steps.length) return;
+
+    steps.forEach(function (step) {
+      step.addEventListener('click', function () {
+        var alvo = document.getElementById(step.dataset.target);
+        if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    var alvos = steps
+      .map(function (step) { return document.getElementById(step.dataset.target); })
+      .filter(Boolean);
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var i = alvos.indexOf(entry.target);
+          if (i === -1) return;
+          steps[i].classList.toggle('active', entry.isIntersecting);
+        });
+      }, { rootMargin: '-96px 0px -60% 0px', threshold: 0 });
+      alvos.forEach(function (alvo) { observer.observe(alvo); });
+    }
+  })();
+
+  // [TESTE] fotos de problema — redimensiona no cliente antes de mandar,
+  // pra não estourar o limite de upload nem gastar dados 4G do fiscal.
+  var fotoInput = document.getElementById('foto-input');
+  var MAX_FOTOS = 6;
+  var fotoCount = 0;
+
+  // [AJUSTE] orçamento por foto reduzido pra rede móvel: o fiscal faz a
+  // vistoria em 3G/4G, muitas vezes fraco. 6 fotos a ~2MB eram ~12MB de
+  // upload — minutos, com timeout provável. Foto de dano (cadeira quebrada,
+  // pintura) fica nítida a ~1280px / q0.55 ≈ 350-550KB. Alvo ~700KB
+  // decodificado (~950KB em base64). O servidor mantém o teto de 2MB
+  // (_MAX_FOTO_LEN em vistorias.py) só como rede de segurança.
+  var MAX_FOTO_B64_LEN = 950000;
+  var TENTATIVAS_COMPRESSAO = [
+    { maxDim: 1400, q: 0.62 },
+    { maxDim: 1280, q: 0.55 },
+    { maxDim: 1080, q: 0.5 },
+    { maxDim: 900,  q: 0.42 },
+    { maxDim: 800,  q: 0.35 },
+  ];
+
+  function gerarDataUrlComprimida(img) {
+    var dataUrl = null;
+    for (var i = 0; i < TENTATIVAS_COMPRESSAO.length; i++) {
+      var t      = TENTATIVAS_COMPRESSAO[i];
+      var scale  = Math.min(1, t.maxDim / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      dataUrl = canvas.toDataURL('image/jpeg', t.q);
+      if (dataUrl.length <= MAX_FOTO_B64_LEN) return dataUrl;
+    }
+    return dataUrl; // menor conseguida, mesmo que ainda passe do orçamento
+  }
+
+  if (fotoInput) {
+    fotoInput.addEventListener('change', function (e) {
+      Array.from(e.target.files).forEach(function (file) {
+        if (fotoCount >= MAX_FOTOS) return;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var dataUrl = gerarDataUrlComprimida(img);
+            if (dataUrl.length > MAX_FOTO_B64_LEN) {
+              alert('Essa foto ficou grande demais mesmo comprimida e não foi anexada. Tente tirar de novo com menos zoom/detalhe.');
+              return;
+            }
+
+            fotoCount++;
+            var hidden = document.createElement('input');
+            hidden.type  = 'hidden';
+            hidden.name  = 'foto_b64';
+            hidden.value = dataUrl;
+            document.getElementById('foto-hidden-inputs').appendChild(hidden);
+
+            var thumb = document.createElement('div');
+            thumb.className = 'foto-thumb';
+            thumb.innerHTML = '<img src="' + dataUrl + '"><button type="button">×</button>';
+            thumb.querySelector('button').addEventListener('click', function () {
+              hidden.remove();
+              thumb.remove();
+              fotoCount--;
+            });
+            document.getElementById('foto-preview-grid').appendChild(thumb);
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      fotoInput.value = '';
+    });
+  }
+
+  document.querySelectorAll('.sig-clear').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = btn.dataset.target;
+      (target === 'sig-requerente' ? padRequerente : padFiscal).clear();
+    });
+  });
+
+  // [FEATURE] vistoria offline — registra o service worker cedo (antes do
+  // fiscal precisar dele) pra já estar ativo quando o sinal cair.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-vistoria.js', { scope: '/' }).catch(function () {});
+  }
+
+  var erroTopoBanner = document.getElementById('erro-topo-banner');
+  var erroTopoTexto  = document.getElementById('erro-topo-texto');
+
+  function mostrarErroTopo(msg) {
+    erroTopoTexto.textContent = msg;
+    erroTopoBanner.style.display = 'flex';
+  }
+  function esconderErroTopo() {
+    erroTopoBanner.style.display = 'none';
+  }
+
+  document.getElementById('vistoria-form').addEventListener('submit', function (e) {
+    e.preventDefault(); // sempre intercepta — decide POST direto ou fila offline
+
+    var okRequerente = !padRequerente.isEmpty();
+    var okFiscal      = !padFiscal.isEmpty();
+    document.getElementById('warn-requerente').style.display = okRequerente ? 'none' : 'block';
+    document.getElementById('warn-fiscal').style.display     = okFiscal ? 'none' : 'block';
+
+    // [FEATURE] o aviso pequeno embaixo do quadro de assinatura pode ficar
+    // fora da tela se o fiscal já rolou pra baixo — some despercebido.
+    // Banner grande no topo + rolagem automática até a assinatura que
+    // falta garantem que ele vê o problema na hora.
+    if (!okRequerente || !okFiscal) {
+      var faltando = !okRequerente ? 'do Requerente' : 'do Funcionário/Síndico';
+      mostrarErroTopo('Falta a assinatura ' + faltando + '. Role até lá e assine antes de salvar.');
+      var cardAlvo = document.getElementById(!okRequerente ? 'card-assinatura-requerente' : 'card-assinatura-fiscal');
+      if (cardAlvo) cardAlvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    esconderErroTopo();
+
+    document.getElementById('input-sig-requerente').value = padRequerente.toDataURL('image/png');
+    document.getElementById('input-sig-fiscal').value      = padFiscal.toDataURL('image/png');
+
+    var btn = document.getElementById('btn-salvar');
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="ti ti-loader-2"><use href="#ti-loader-2"></use></svg> Salvando...';
+
+    var form = e.target;
+    var url  = form.action || window.location.href;
+    var fd   = new FormData(form);
+
+    var LABEL_SALVAR = '<svg class="ti ti-device-floppy"><use href="#ti-device-floppy"></use></svg> Salvar {{ "Vistoria" if momento == "vistoria" else "Revistoria" }}';
+
+    function guardarOffline() {
+      // Falha de rede de verdade (o POST não completou) — guarda no celular
+      // e manda depois. Nunca joga fora o preenchimento do fiscal.
+      var entries = [];
+      fd.forEach(function (value, key) { entries.push([key, value]); });
+      vistoriaSalvarPendente({ url: url, entries: entries, criadoEm: new Date().toISOString(), tentativas: 0 })
+        .then(function () {
+          if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            navigator.serviceWorker.ready.then(function (reg) {
+              return reg.sync.register('vistoria-sync');
+            }).catch(function () {});
+          }
+          btn.innerHTML = '<svg class="ti ti-cloud-off"><use href="#ti-cloud-off"></use></svg> Salvo no celular — envia sozinho com internet';
+          setTimeout(function () {
+            window.location.href = '{{ url_for("vistorias.painel_fiscal") }}';
+          }, 1800);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.innerHTML = 'Tentar novamente';
+          alert('Não consegui salvar nem localmente. Tenta de novo, ou anota no papel se persistir.');
+        });
+    }
+
+    // [FEATURE] barra de progresso do envio: no 3G/4G um POST com fotos leva
+    // dezenas de segundos. Sem retorno visível o fiscal acha que travou e
+    // recarrega — perdendo o preenchimento. XHR expõe upload.onprogress; o
+    // fetch() não.
+    // [FIX] resposta do servidor (mesmo de erro) NUNCA vai pra fila offline —
+    // reenviar os mesmos bytes recusados dá no mesmo. Só falha de rede real
+    // (onerror/ontimeout, o POST nem completou) é que guarda offline.
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.withCredentials = true;
+    xhr.timeout = 120000;  // 3G ruim: dá tempo, mas não pendura pra sempre
+
+    xhr.upload.onprogress = function (ev) {
+      if (!ev.lengthComputable) return;
+      var pct = Math.round((ev.loaded / ev.total) * 100);
+      btn.innerHTML = '<svg class="ti ti-loader-2"><use href="#ti-loader-2"></use></svg> Enviando… ' + pct + '%';
+    };
+    xhr.upload.onload = function () {
+      btn.innerHTML = '<svg class="ti ti-loader-2"><use href="#ti-loader-2"></use></svg> Salvando…';
+    };
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 400) {
+        window.location.href = '{{ url_for("vistorias.painel_fiscal") }}';
+        return;
+      }
+      // Servidor respondeu recusando (400 CSRF/sessão, 413, 500…).
+      btn.disabled = false;
+      btn.innerHTML = LABEL_SALVAR;
+      alert(
+        'O sistema recusou o envio (erro ' + xhr.status + ').\n\n' +
+        'Isso não é falta de internet — algo nos dados não foi aceito, ou a sessão expirou. ' +
+        'Tente salvar de novo. Se o erro continuar, avise o administrador antes de sair da tela ' +
+        '(as fotos e assinaturas que você já tirou continuam aqui).'
+      );
+    };
+    xhr.onerror   = guardarOffline;
+    xhr.ontimeout = guardarOffline;
+    xhr.send(fd);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+﻿{% extends 'base.html' %}
+{% block title %}{% if salao %}Editar Salão{% else %}Novo Salão{% endif %} — CondoReservas{% endblock %}
+{% block page_title %}{% if salao %}Editar Salão{% else %}Novo Salão{% endif %}{% endblock %}
+
+{% block content %}
+<div style="max-width:640px">
+
+  <div style="margin-bottom:20px">
+    <a href="{{ url_for('condominios.ver_condominio', id=condominio.id) }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none"
+      onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar para {{ condominio.nome }}
+    </a>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(59,130,246,0.35);border-radius:20px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(59,130,246,0.07)"></div>
+    <div style="position:relative">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0 0 6px;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-{% if salao %}edit{% else %}door{% endif %}" style="font-size:20px;color:#60a5fa"></i>
+        {% if salao %}Editar Salão{% else %}Novo Salão{% endif %}
+      </h2>
+      <p style="font-size:12px;color:#909090;margin:0">{{ condominio.nome }}</p>
+    </div>
+  </div>
+
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px">
+    <form method="POST" style="display:flex;flex-direction:column;gap:18px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Nome do Salão</label>
+          <input type="text" name="nome" required value="{{ salao.nome if salao else '' }}" placeholder="Ex: Salão Principal"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Valor (R$)</label>
+          <input type="number" step="0.01" min="0" name="valor" required value="{{ salao.valor if salao else '' }}" placeholder="Ex: 350.00"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Forma de Pagamento</label>
+        <select name="forma_pagamento"
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;cursor:pointer;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+          <option value="Boleto Antecipado" {% if salao and salao.forma_pagamento == 'Boleto Antecipado' %}selected{% endif %}>Boleto Antecipado</option>
+          <option value="Boleto Condomínio" {% if salao and salao.forma_pagamento == 'Boleto Condomínio' %}selected{% endif %}>Boleto Condomínio</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Zelador para Limpeza</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(59,130,246,0.15);border-color:#2E5F8A;color:#60a5fa' if (not salao or salao.zelador == 'nunca') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="zelador" value="nunca" {% if not salao or salao.zelador == 'nunca' %}checked{% endif %} style="display:none" onchange="updateZelador()">
+            <i class="ti ti-ban" style="font-size:12px"></i> Nunca
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(138,80,20,0.15);border-color:#8A5014;color:#c07830' if (salao and salao.zelador == 'opcional') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="zelador" value="opcional" {% if salao and salao.zelador == 'opcional' %}checked{% endif %} style="display:none" onchange="updateZelador()">
+            <i class="ti ti-help" style="font-size:12px"></i> Opcional
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(15,110,86,0.15);border-color:#0F6E56;color:#4ac090' if (salao and salao.zelador == 'sempre') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="zelador" value="sempre" {% if salao and salao.zelador == 'sempre' %}checked{% endif %} style="display:none" onchange="updateZelador()">
+            <i class="ti ti-brush" style="font-size:12px"></i> Sempre
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(124,58,237,0.15);border-color:#6D28D9;color:#a78bfa' if (salao and salao.zelador == 'fds') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="zelador" value="fds" {% if salao and salao.zelador == 'fds' %}checked{% endif %} style="display:none" onchange="updateZelador()">
+            <i class="ti ti-calendar-event" style="font-size:12px"></i> Só fim de semana
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Tipo de Ocupação</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(59,130,246,0.15);border-color:#2E5F8A;color:#60a5fa' if (not salao or salao.tipo == 'dia_inteiro') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="tipo" value="dia_inteiro" {% if not salao or salao.tipo == 'dia_inteiro' %}checked{% endif %} style="display:none" onchange="updateTipo()">
+            <i class="ti ti-calendar" style="font-size:12px"></i> Dia inteiro
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;transition:all 0.15s;
+            {{ 'background:rgba(138,80,20,0.15);border-color:#8A5014;color:#c07830' if (salao and salao.tipo == 'horario_fixo') else 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:#4a6580' }}">
+            <input type="radio" name="tipo" value="horario_fixo" {% if salao and salao.tipo == 'horario_fixo' %}checked{% endif %} style="display:none" onchange="updateTipo()">
+            <i class="ti ti-clock" style="font-size:12px"></i> Horário fixo
+          </label>
+        </div>
+      </div>
+
+      <div id="horarios-group" style="{{ '' if salao and salao.tipo == 'horario_fixo' else 'display:none' }}">
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Faixas de Horário</label>
+        <div id="faixas-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          {% if salao and salao.horarios %}
+            {% for h in salao.horarios.split(',') %}
+            <div class="faixa-item" style="display:flex;gap:8px;align-items:center">
+              <input type="text" name="horario_faixa" value="{{ h.strip() }}" placeholder="Ex: 12h-16h"
+                style="flex:1;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+                onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+                onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+              <button type="button" onclick="this.parentElement.remove()"
+                style="font-size:11px;font-weight:700;color:#d07070;background:rgba(208,112,112,0.1);border:0.5px solid rgba(208,112,112,0.25);padding:8px 10px;border-radius:10px;cursor:pointer">
+                <i class="ti ti-x" style="font-size:12px"></i>
+              </button>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="faixa-item" style="display:flex;gap:8px;align-items:center">
+              <input type="text" name="horario_faixa" placeholder="Ex: 12h-16h"
+                style="flex:1;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+                onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+                onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+              <button type="button" onclick="this.parentElement.remove()"
+                style="font-size:11px;font-weight:700;color:#d07070;background:rgba(208,112,112,0.1);border:0.5px solid rgba(208,112,112,0.25);padding:8px 10px;border-radius:10px;cursor:pointer">
+                <i class="ti ti-x" style="font-size:12px"></i>
+              </button>
+            </div>
+          {% endif %}
+        </div>
+        <button type="button" onclick="adicionarFaixa()"
+          style="font-size:12px;font-weight:600;color:#60a5fa;background:transparent;border:0.5px solid rgba(255,255,255,0.08);padding:7px 14px;border-radius:10px;cursor:pointer;transition:border-color 0.15s"
+          onmouseover="this.style.borderColor='#60a5fa'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <i class="ti ti-plus" style="font-size:11px;margin-right:4px"></i> Adicionar faixa
+        </button>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Grupo (opcional)</label>
+        <input type="text" name="grupo" value="{{ salao.grupo or '' }}" placeholder="Ex: principal"
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        <p style="font-size:11px;color:#4a6580;margin:6px 0 0">Salões do mesmo grupo se bloqueiam conforme a regra de combo.</p>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Tipo de reserva no grupo</label>
+        <input type="hidden" name="combo" id="combo-value" value="{{ '1' if salao and salao.combo else '0' }}">
+        <div onclick="toggleCombo()" id="combo-label"
+          style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:0.5px solid;border-radius:14px;cursor:pointer;user-select:none;transition:all 0.15s;
+          {{ 'border-color:#6d28d9;background:rgba(109,40,217,0.12)' if salao and salao.combo else 'border-color:rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)' }}">
+          <div style="width:36px;height:20px;border-radius:100px;position:relative;flex-shrink:0;transition:background 0.2s;background:{{ '#8b5cf6' if salao and salao.combo else 'rgba(255,255,255,0.12)' }}" id="combo-track">
+            <div style="width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left 0.2s;left:{{ '19px' if salao and salao.combo else '3px' }}" id="combo-thumb"></div>
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:600;margin:0 0 3px;color:{{ '#9d71e8' if salao and salao.combo else '#909090' }}" id="combo-label-text">
+              {% if salao and salao.combo %}<i class="ti ti-link" style="font-size:12px;margin-right:4px"></i>Combo — reserva conjunta
+              {% else %}<i class="ti ti-map-pin" style="font-size:12px;margin-right:4px"></i>Individual — reserva avulsa{% endif %}
+            </p>
+            <p style="font-size:11px;color:#4a6580;margin:0" id="combo-hint">
+              {% if salao and salao.combo %}Ao reservar este espaço, bloqueia todos os outros do grupo.
+              {% else %}Ao reservar qualquer individual, este combo fica bloqueado.{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.05)">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.15s,transform 0.15s"
+          onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          <i class="ti ti-check" style="margin-right:4px"></i>
+          {{ 'Salvar Alterações' if salao else 'Cadastrar Salão' }}
+        </button>
+        <a href="{{ url_for('condominios.ver_condominio', id=condominio.id) }}"
+          style="font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);color:#909090;text-decoration:none;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+var ZELADOR_COLORS = {
+  nunca:   {bg:'rgba(59,130,246,0.15)',  bc:'#2563EB', c:'#60a5fa'},
+  opcional:{bg:'rgba(138,80,20,0.15)', bc:'#8A5014', c:'#c07830'},
+  sempre:  {bg:'rgba(15,110,86,0.15)', bc:'#0F6E56', c:'#4ac090'},
+  fds:     {bg:'rgba(124,58,237,0.15)', bc:'#6D28D9', c:'#a78bfa'}
+};
+var TIPO_COLORS = {
+  dia_inteiro: {bg:'rgba(59,130,246,0.15)',  bc:'#2563EB', c:'#60a5fa'},
+  horario_fixo:{bg:'rgba(138,80,20,0.15)', bc:'#8A5014', c:'#c07830'}
+};
+function updateZelador() {
+  document.querySelectorAll('input[name="zelador"]').forEach(function(inp) {
+    var lbl = inp.closest('label'), v = ZELADOR_COLORS[inp.value];
+    if (inp.checked) { lbl.style.background=v.bg; lbl.style.borderColor=v.bc; lbl.style.color=v.c; }
+    else { lbl.style.background='rgba(255,255,255,0.04)'; lbl.style.borderColor='rgba(255,255,255,0.08)'; lbl.style.color='#4a6580'; }
+  });
+}
+function updateTipo() {
+  document.querySelectorAll('input[name="tipo"]').forEach(function(inp) {
+    var lbl = inp.closest('label'), v = TIPO_COLORS[inp.value];
+    if (inp.checked) { lbl.style.background=v.bg; lbl.style.borderColor=v.bc; lbl.style.color=v.c; }
+    else { lbl.style.background='rgba(255,255,255,0.04)'; lbl.style.borderColor='rgba(255,255,255,0.08)'; lbl.style.color='#4a6580'; }
+  });
+  var val = document.querySelector('input[name="tipo"]:checked');
+  document.getElementById('horarios-group').style.display = (val && val.value === 'horario_fixo') ? 'block' : 'none';
+}
+function adicionarFaixa() {
+  var div = document.createElement('div');
+  div.className = 'faixa-item';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center';
+  div.innerHTML = '<input type="text" name="horario_faixa" placeholder="Ex: 17h-20h" style="flex:1;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;transition:border-color 0.15s,box-shadow 0.15s" onfocus="this.style.borderColor=\'#2563EB\';this.style.boxShadow=\'0 0 0 3px rgba(59,130,246,0.12)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.boxShadow=\'none\'"><button type="button" onclick="this.parentElement.remove()" style="font-size:11px;font-weight:700;color:#d07070;background:rgba(208,112,112,0.1);border:0.5px solid rgba(208,112,112,0.25);padding:8px 10px;border-radius:10px;cursor:pointer"><i class=\"ti ti-x\" style=\"font-size:12px\"></i></button>';
+  document.getElementById('faixas-container').appendChild(div);
+}
+function toggleCombo() {
+  var val = document.getElementById('combo-value');
+  var on = val.value !== '1';
+  val.value = on ? '1' : '0';
+  document.getElementById('combo-track').style.background = on ? '#8b5cf6' : 'rgba(255,255,255,0.12)';
+  document.getElementById('combo-thumb').style.left = on ? '19px' : '3px';
+  document.getElementById('combo-label').style.borderColor = on ? '#6d28d9' : 'rgba(255,255,255,0.06)';
+  document.getElementById('combo-label').style.background = on ? 'rgba(109,40,217,0.12)' : 'rgba(255,255,255,0.02)';
+  document.getElementById('combo-label-text').innerHTML = on
+    ? '<i class="ti ti-link" style="font-size:12px;margin-right:4px"></i>Combo — reserva conjunta'
+    : '<i class="ti ti-map-pin" style="font-size:12px;margin-right:4px"></i>Individual — reserva avulsa';
+  document.getElementById('combo-label-text').style.color = on ? '#9d71e8' : '#909090';
+  document.getElementById('combo-hint').textContent = on
+    ? 'Ao reservar este espaço, bloqueia todos os outros do grupo.'
+    : 'Ao reservar qualquer individual, este combo fica bloqueado.';
+}
+</script>
+{% endblock %}

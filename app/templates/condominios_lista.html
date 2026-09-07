@@ -1,0 +1,113 @@
+﻿{% extends 'base.html' %}
+{% block title %}Condomínios — CondoReservas{% endblock %}
+{% block page_title %}Condomínios{% endblock %}
+
+{% block content %}
+
+<!-- ── Barra de busca ──────────────────────────────────────── -->
+<div style="display:flex;gap:12px;margin-bottom:24px;align-items:center">
+  <form method="GET" action="{{ url_for('condominios.lista_condominios') }}" style="display:flex;gap:10px;flex:1">
+    <div style="flex:1;position:relative">
+      <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:#4a6580;pointer-events:none"></i>
+      <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar condomínio pelo nome..."
+        style="width:100%;padding:10px 14px 10px 40px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color cubic-bezier(0.4,0,0.2,1) 0.2s,box-shadow cubic-bezier(0.4,0,0.2,1) 0.2s"
+        onfocus="this.style.borderColor='rgba(46,95,138,0.6)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.15)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+    </div>
+    <button type="submit"
+      style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:transform cubic-bezier(0.4,0,0.2,1) 0.2s,box-shadow cubic-bezier(0.4,0,0.2,1) 0.2s"
+      onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+      onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+      <i class="ti ti-search" style="margin-right:4px"></i> Buscar
+    </button>
+  </form>
+  <a href="{{ url_for('condominios.novo_condominio') }}"
+    style="background:transparent;border:0.5px solid rgba(255,255,255,0.08);color:#909090;font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;text-decoration:none;white-space:nowrap;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+    onmouseover="this.style.borderColor='var(--c-primary)';this.style.color='#60a5fa'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090'">
+    <i class="ti ti-plus" style="margin-right:4px"></i> Novo Condomínio
+  </a>
+</div>
+
+<!-- ── Grid de cards ──────────────────────────────────────── -->
+{% if condominios %}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+  {% for c in condominios %}
+  <a href="{{ url_for('condominios.ver_condominio', id=c.id) }}"
+    style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px;text-decoration:none;display:block;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s;position:relative;overflow:hidden;
+      border-top:2px solid rgba(59,130,246,0.4)"
+    onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 24px rgba(59,130,246,0.12)'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+      <div style="width:40px;height:40px;border-radius:11px;background:rgba(46,95,138,0.1);border:0.5px solid rgba(46,95,138,0.2);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-building" style="font-size:19px;color:#60a5fa"></i>
+      </div>
+      {% if c.exige_adimplencia %}
+      <span class="badge badge-warning">
+        <i class="ti ti-alert-circle" style="font-size:10px"></i> Adimplência
+      </span>
+      {% else %}
+      <span class="badge badge-neutral">Livre</span>
+      {% endif %}
+    </div>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;color:#ebebeb">{{ c.nome }}</h3>
+    {% set end = c.endereco %}
+    {% if end and end != 'None' %}
+    <p style="font-size:12px;color:#4a6580;margin-bottom:16px;line-height:1.5">{{ end }}</p>
+    {% else %}
+    <p style="font-size:12px;color:transparent;margin-bottom:16px;line-height:1.5;user-select:none">&nbsp;</p>
+    {% endif %}
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:0.5px solid rgba(255,255,255,0.05)">
+      {% set n = c.saloes|length %}
+      <span style="font-size:11px;font-weight:700;color:#60a5fa;background:rgba(46,95,138,0.1);border:0.5px solid rgba(46,95,138,0.2);padding:4px 12px;border-radius:100px">
+        <i class="ti ti-door" style="font-size:11px;margin-right:3px"></i>
+        {% if n == 0 %}Nenhum salão{% elif n == 1 %}1 salão{% else %}{{ n }} salões{% endif %}
+      </span>
+      <i class="ti ti-arrow-right" style="font-size:16px;color:#4a6580"></i>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="padding:14px 20px;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;gap:8px;justify-content:center;align-items:center">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('condominios.lista_condominios', page=pagination.prev_num, busca=busca) }}"
+    style="padding:6px 14px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#909090;font-size:12px;text-decoration:none;transition:border-color 0.15s"
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+    ← Anterior
+  </a>
+  {% endif %}
+  <span style="font-size:12px;color:#4a6580">{{ pagination.page }} / {{ pagination.pages }}</span>
+  {% if pagination.has_next %}
+  <a href="{{ url_for('condominios.lista_condominios', page=pagination.next_num, busca=busca) }}"
+    style="padding:6px 14px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#909090;font-size:12px;text-decoration:none;transition:border-color 0.15s"
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+    Próxima →
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<!-- ── Empty state ──────────────────────────────────────── -->
+<div class="empty-state">
+  <i class="ti ti-building empty-icon"></i>
+  <p style="font-size:14px;font-weight:600;color:#909090">
+    {% if busca %}Nenhum condomínio encontrado para "{{ busca }}"{% else %}Nenhum condomínio cadastrado{% endif %}
+  </p>
+  {% if busca %}
+  <a href="{{ url_for('condominios.lista_condominios') }}"
+    style="font-size:12px;color:#4a6580;text-decoration:none;margin-top:4px">Limpar busca</a>
+  {% else %}
+  <a href="{{ url_for('condominios.novo_condominio') }}"
+    style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 24px;border-radius:12px;text-decoration:none;margin-top:8px;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)">
+    <i class="ti ti-plus" style="margin-right:4px"></i> Cadastrar Condomínio
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

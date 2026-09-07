@@ -1,0 +1,449 @@
+﻿{% extends 'base.html' %}
+{% block title %}Termos e Comunicados — CondoReservas{% endblock %}
+{% block page_title %}Termos e Comunicados{% endblock %}
+
+{% block content %}
+<div style="max-width:920px">
+
+  <!-- ── Header card ──────────────────────────────────────── -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%)"></div>
+    <div style="position:absolute;bottom:-30px;left:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(46,95,138,0.07) 0%,transparent 70%)"></div>
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(46,95,138,0.04) 0%,transparent 60%);pointer-events:none"></div>
+    <div style="position:relative;display:flex;align-items:center;gap:14px">
+      <div style="width:46px;height:46px;border-radius:14px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(46,95,138,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-file-certificate" style="font-size:22px;color:#60a5fa"></i>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:23px;color:#ebebeb;margin:0 0 5px;letter-spacing:-0.2px">Termos e Comunicados</h2>
+        <p style="font-size:12px;color:#909090;margin:0">Gere comunicados e termos de vistoria por período, condomínio ou apartamento</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filtros ──────────────────────────────────────────── -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px;margin-bottom:16px">
+    <form method="GET" action="{{ url_for('relatorios.termos_comunicados') }}" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+
+      <!-- Data Início -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Início</label>
+        <input type="date" name="inicio" value="{{ data_inicio.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+
+      <!-- Data Fim -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Fim</label>
+        <input type="date" name="fim" value="{{ data_fim.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+
+      <!-- Condomínio -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Condomínio</label>
+        <select name="condominio_id"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;cursor:pointer;min-width:168px;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <option value="">Todos</option>
+          {% for c in condominios %}
+          <option value="{{ c.id }}" {% if condominio_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Apartamento -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Apartamento</label>
+        <input type="text" name="apartamento" value="{{ apartamento }}" placeholder="Ex: 302"
+          style="width:110px;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+
+      <!-- Filtrar -->
+      <button type="submit"
+        style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);display:inline-flex;align-items:center;gap:6px"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+        <i class="ti ti-filter" style="font-size:13px"></i> Filtrar
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Lista de reservas ────────────────────────────────── -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <!-- List header -->
+    <div style="padding:15px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">
+        {{ reservas|length }} reserva{% if reservas|length != 1 %}s{% endif %}
+      </span>
+      <span style="font-size:11px;color:#4a6580">
+        {{ data_inicio.strftime('%d/%m/%Y') }} — {{ data_fim.strftime('%d/%m/%Y') }}
+      </span>
+    </div>
+
+    {% if reservas %}
+    <div>
+      {% for r in reservas %}
+      {% set antecipada = r.id in (antecipada_ids or []) %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);gap:14px;transition:background 0.15s
+          {%- if antecipada %};background:rgba(255,255,255,0.05){% endif %}"
+        onmouseover="this.style.background='rgba(255,255,255,{{ '0.08' if antecipada else '0.02' }})'"
+        onmouseout="this.style.background='{{ 'rgba(255,255,255,0.05)' if antecipada else 'transparent' }}'">
+
+        <!-- Left: date bubble + info -->
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1">
+          <!-- Date bubble: mostra a data em que o fiscal vai de fato (data_vistoria
+               quando antecipada pra D-1), não a data da festa -->
+          <div style="width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+              {%- if antecipada %}background:rgba(255,255,255,0.14);border:0.5px solid rgba(255,255,255,0.35)
+              {%- else %}background:linear-gradient(135deg,rgba(59,130,246,0.18),rgba(59,130,246,0.07));border:0.5px solid rgba(59,130,246,0.25){%- endif %}">
+            <span style="font-size:17px;font-weight:800;line-height:1.05;letter-spacing:-0.5px;color:{{ '#fff' if antecipada else '#60a5fa' }}">{{ (r.data_vistoria if antecipada else r.data_festa).strftime('%d') }}</span>
+            <span style="font-size:9px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.07em">{{ (r.data_vistoria if antecipada else r.data_festa).strftime('%b') }}</span>
+          </div>
+
+          <!-- Info -->
+          <div style="min-width:0">
+            <p style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {% if antecipada %}
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#fff;color:#111e30;font-size:9px;font-weight:800;padding:1.5px 6px;border-radius:6px;margin-right:6px;letter-spacing:.03em;vertical-align:middle">VIST. ANTECIPADA</span>
+              {% endif %}
+              {{ r.salao.condominio.nome }}
+            </p>
+            <p style="font-size:12px;color:#4a6580;margin:0;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <span style="color:#909090">{{ r.salao.nome }}</span>
+              {% if not r.festa_condominio %}
+              <span style="color:#303030">·</span>
+              <span>Apto. <strong style="color:#909090;font-weight:600">{{ r.apartamento }}</strong></span>
+              <span style="color:#303030">·</span>
+              <span>{{ r.nome_solicitante }}</span>
+              {% else %}
+              <span style="color:#303030">·</span>
+              <span style="color:#a070d0;font-weight:600">{{ r.motivo_festa or '[Festa do Condomínio]' }}</span>
+              {% endif %}
+              {% if antecipada %}
+              <span style="color:#303030">·</span>
+              <span style="color:#909090">festa dia {{ r.data_festa.strftime('%d/%m') }}</span>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: hora vistoria + badge + action -->
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+
+          {% if r.data_vistoria %}
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <span style="font-size:9px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em">Hora Vist.</span>
+            <input type="text"
+              class="hora-in"
+              data-id="{{ r.id }}"
+              value="{{ r.hora_vistoria or '' }}"
+              placeholder="--:--"
+              maxlength="5"
+              style="width:52px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.15);color:#ebebeb;font-size:12px;text-align:center;outline:none;padding:2px 4px;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.6)'"
+              onblur="this.style.borderColor='rgba(255,255,255,0.15)'">
+          </div>
+          {% endif %}
+
+          <!-- [FEATURE] pedido do Viny: marcação de vistoria/revistoria
+               feita — saiu do relatório semanal, agora só aqui, pra
+               acompanhar em tempo real se o fiscal já foi no local. -->
+          {% if not r.festa_condominio and r.salao.condominio.emite_termo %}
+          {% set feitas = r.vistorias_termo|map(attribute='momento')|list %}
+          {% set vistoria_necessaria = r.salao.condominio.precisa_vistoria_em(r.data_vistoria) %}
+          {% set vistoria_atrasada = hoje and vistoria_necessaria and r.data_vistoria and r.data_vistoria <= hoje and 'vistoria' not in feitas %}
+          {% set revistoria_necessaria = r.salao.condominio.precisa_vistoria_em(r.dia_revistoria) %}
+          <div style="display:flex;align-items:center;gap:5px">
+            {% if vistoria_necessaria %}
+            <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=r.id, momento='vistoria') }}"
+              style="font-size:10px;font-weight:700;padding:5px 9px;border-radius:8px;text-decoration:none;white-space:nowrap;{% if 'vistoria' in feitas %}background:rgba(34,197,94,0.15);color:#4ade80;border:0.5px solid rgba(34,197,94,0.3){% elif vistoria_atrasada %}background:rgba(239,68,68,0.15);color:#f87171;border:0.5px solid rgba(239,68,68,0.3){% else %}background:rgba(255,255,255,0.04);color:#8a97a8;border:0.5px solid rgba(255,255,255,0.1){% endif %}"
+              title="{{ 'Vistoria prevista pra hoje (ou atrasada) e ainda não preenchida' if vistoria_atrasada else 'Vistoria' }}">
+              {{ 'VISTORIA ✓' if 'vistoria' in feitas else 'VISTORIA' }}
+            </a>
+            {% endif %}
+            {% if revistoria_necessaria %}
+            <a href="{{ url_for('vistorias.preencher_vistoria', reserva_id=r.id, momento='revistoria') }}"
+              style="font-size:10px;font-weight:700;padding:5px 9px;border-radius:8px;text-decoration:none;white-space:nowrap;{% if 'revistoria' in feitas %}background:rgba(34,197,94,0.15);color:#4ade80;border:0.5px solid rgba(34,197,94,0.3){% else %}background:rgba(255,255,255,0.04);color:#8a97a8;border:0.5px solid rgba(255,255,255,0.1){% endif %}"
+              title="Revistoria">
+              {{ 'REVISTORIA ✓' if 'revistoria' in feitas else 'REVISTORIA' }}
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- Indicadores minimalistas de impressão: azul = comunicado, roxo = termo.
+               Sempre visíveis; "ligado" (cor) quando já impresso, "desligado"
+               (apagado) quando ainda não. -->
+          {% set com_impresso = r.id in ids_com_comunicado %}
+          <span title="{{ 'Comunicado já impresso' if com_impresso else 'Comunicado ainda não impresso' }}"
+            style="width:21px;height:21px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;
+            {% if com_impresso %}background:rgba(59,130,246,0.15);border:0.5px solid rgba(59,130,246,0.35)
+            {% else %}background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08){% endif %}">
+            <i class="ti ti-check" style="font-size:11px;color:{{ '#60a5fa' if com_impresso else '#2a3644' }}"></i>
+          </span>
+          {% set termo_impresso = r.id in ids_com_termo %}
+          <span title="{{ 'Termo já impresso' if termo_impresso else 'Termo ainda não impresso' }}"
+            style="width:21px;height:21px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;
+            {% if termo_impresso %}background:rgba(140,80,200,0.15);border:0.5px solid rgba(140,80,200,0.35)
+            {% else %}background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08){% endif %}">
+            <i class="ti ti-check" style="font-size:11px;color:{{ '#a070d0' if termo_impresso else '#2a3644' }}"></i>
+          </span>
+
+          {% if r.vistoria_pareada_com_id %}
+          <!-- [FEATURE] festa combinada — 2º dia não tem termo próprio, o
+               termo (com as duas datas) sai na reserva do 1º dia. -->
+          <a href="{{ url_for('relatorios.termo_individual', reserva_id=r.vistoria_pareada_com_id) }}"
+            target="_blank" title="Termo combinado — emitido junto com {{ r.vistoria_pareada_com.data_festa.strftime('%d/%m') if r.vistoria_pareada_com else '' }}"
+            style="font-size:11px;font-weight:600;padding:7px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);color:#8a97a8;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+            <i class="ti ti-link" style="font-size:12px"></i> Termo combinado
+          </a>
+          {% elif not r.festa_condominio and (r.salao.condominio.precisa_vistoria_em(r.data_vistoria) or r.salao.condominio.precisa_vistoria_em(r.dia_revistoria)) %}
+          <a href="{{ url_for('relatorios.termo_individual', reserva_id=r.id) }}"
+            target="_blank"
+            style="font-size:12px;font-weight:700;padding:7px 15px;border-radius:10px;background:rgba(140,80,200,0.12);border:0.5px solid rgba(140,80,200,0.28);color:#a070d0;text-decoration:none;transition:all 0.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px"
+            onmouseover="this.style.background='rgba(140,80,200,0.22)';this.style.borderColor='rgba(140,80,200,0.45)';this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.background='rgba(140,80,200,0.12)';this.style.borderColor='rgba(140,80,200,0.28)';this.style.transform=''">
+            <i class="ti ti-file-text" style="font-size:12px"></i> Termo
+          </a>
+          {% endif %}
+
+          <!-- Editar overrides manuais de termo/comunicado (data de vistoria/revistoria, motivo da festa, texto do comunicado) -->
+          <button type="button"
+            class="btn-editar-termo"
+            title="Editar termo/comunicado"
+            data-id="{{ r.id }}"
+            data-data-vistoria="{{ r.data_vistoria.isoformat() if r.data_vistoria else '' }}"
+            data-dia-revistoria="{{ r.dia_revistoria.isoformat() if r.dia_revistoria else '' }}"
+            data-revistoria-override="{{ r.data_revistoria_override.isoformat() if r.data_revistoria_override else '' }}"
+            data-motivo-festa="{{ r.motivo_festa or '' }}"
+            data-comunicado-override="{{ r.comunicado_texto_override or '' }}"
+            style="width:30px;height:30px;flex-shrink:0;border-radius:9px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:#8a97a8;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;padding:0"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.18)';this.style.color='#ebebeb'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#8a97a8'">
+            <i class="ti ti-pencil" style="font-size:13px"></i>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ── Ações ────────────────────────────────────────────── -->
+    <div style="padding:16px 22px;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:rgba(0,0,0,0.15)">
+
+      <!-- Toggle apenas novos -->
+      <label id="toggle-novos-label"
+        style="display:flex;align-items:center;gap:10px;padding:8px 14px;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;user-select:none"
+        onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.13)'"
+        onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div id="toggle-novos-track"
+          style="width:36px;height:20px;border-radius:100px;position:relative;transition:background 0.2s;background:{% if apenas_novos == '1' %}#2563EB{% else %}#333{% endif %}">
+          <div id="toggle-novos-thumb"
+            style="width:14px;height:14px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);position:absolute;top:3px;transition:left 0.2s;left:{% if apenas_novos == '1' %}19px{% else %}3px{% endif %}"></div>
+        </div>
+        <span id="toggle-novos-text" style="color:{% if apenas_novos == '1' %}#60a5fa{% else %}#4a6580{% endif %}">
+          {% if apenas_novos == '1' %}Apenas novos{% else %}Todos{% endif %}
+        </span>
+      </label>
+
+      <a id="btn-comunicados"
+        href="{{ url_for('relatorios.termos_comunicados') }}?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}&condominio_id={{ condominio_id }}&apartamento={{ apartamento }}&apenas_novos={{ apenas_novos }}&pdf_comunicados=1"
+        target="_blank"
+        style="font-size:13px;font-weight:600;padding:9px 18px;border-radius:12px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(46,95,138,0.28);color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:all 0.15s"
+        onmouseover="this.style.background='rgba(46,95,138,0.22)';this.style.borderColor='rgba(46,95,138,0.45)';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='rgba(59,130,246,0.12)';this.style.borderColor='rgba(46,95,138,0.28)';this.style.transform=''">
+        <i class="ti ti-clipboard-list" style="font-size:14px"></i> Comunicados PDF
+      </a>
+
+      <a id="btn-termos"
+        href="{{ url_for('relatorios.termos_comunicados') }}?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}&condominio_id={{ condominio_id }}&apartamento={{ apartamento }}&apenas_novos={{ apenas_novos }}&pdf_termos=1"
+        target="_blank"
+        style="font-size:13px;font-weight:600;padding:9px 18px;border-radius:12px;background:rgba(140,80,200,0.12);border:0.5px solid rgba(140,80,200,0.28);color:#a070d0;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:all 0.15s"
+        onmouseover="this.style.background='rgba(140,80,200,0.22)';this.style.borderColor='rgba(140,80,200,0.45)';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='rgba(140,80,200,0.12)';this.style.borderColor='rgba(140,80,200,0.28)';this.style.transform=''">
+        <i class="ti ti-file-certificate" style="font-size:14px"></i> Termos PDF
+      </a>
+    </div>
+
+    {% else %}
+    <div class="empty-state" style="border-radius:0;border:none">
+      <i class="ti ti-file-off empty-icon"></i>
+      <p style="font-weight:600;font-size:14px;color:#909090">Nenhuma reserva encontrada</p>
+      <p>Ajuste o período e os filtros acima</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ── Modal: editar overrides manuais de termo/comunicado ─────
+     [TESTE] id com prefixo "modal-" é intencional: base.html tem CSS global
+     ([id^="modal-"]) que já trata position:fixed/inset/backdrop/z-index e o
+     toggle .hidden via as funções globais abrirModal()/fecharModal() (ver
+     base.html). Os campos internos usam prefixo "tc-" (não "modal-") pra não
+     serem capturados individualmente pela mesma regra global. -->
+<div id="modal-termo-comunicado" class="hidden" style="padding:16px">
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:15px;font-weight:700;color:#ebebeb;margin:0">Editar termo / comunicado</h3>
+      <button type="button" id="tc-fechar" style="background:none;border:none;color:#4a6580;cursor:pointer;font-size:18px;line-height:1;padding:2px">&times;</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Data da vistoria</label>
+        <input type="date" id="tc-data-vistoria" style="width:100%;box-sizing:border-box;padding:9px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Data da revistoria</label>
+        <input type="date" id="tc-data-revistoria" style="width:100%;box-sizing:border-box;padding:9px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        <p id="tc-revistoria-padrao" style="font-size:11px;color:#4a6580;margin:5px 0 0">Padrão (D+1): —</p>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Motivo da festa (só festa do condomínio)</label>
+        <input type="text" id="tc-motivo-festa" maxlength="200" placeholder="Ex: Arraiá do condomínio"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Texto do comunicado (substitui a linha padrão)</label>
+        <textarea id="tc-comunicado-texto" maxlength="500" rows="3" placeholder="Deixe em branco para usar o texto automático"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button type="button" id="tc-cancelar"
+        style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:#8a97a8;font-size:13px;font-weight:600;cursor:pointer">
+        Cancelar
+      </button>
+      <button type="button" id="tc-salvar"
+        style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#1d4ed8);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  function saveHora(input) {
+    const id  = input.dataset.id;
+    const val = input.value.trim();
+    fetch('/api/reservas/' + id + '/gep_obs', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ hora_vistoria: val })
+    })
+    .then(r => { if (!r.ok) throw new Error(); })
+    .then(() => {
+      input.style.borderColor = 'rgba(74,222,128,0.6)';
+      setTimeout(() => input.style.borderColor = 'rgba(255,255,255,0.15)', 900);
+    })
+    .catch(() => alert('Erro ao salvar horário.'));
+  }
+
+  document.querySelectorAll('.hora-in').forEach(inp => {
+    inp.addEventListener('blur', e => saveHora(e.target));
+    inp.addEventListener('keypress', e => {
+      if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    });
+  });
+})();
+</script>
+
+<script>
+const track = document.getElementById('toggle-novos-track');
+const thumb = document.getElementById('toggle-novos-thumb');
+const text  = document.getElementById('toggle-novos-text');
+const label = document.getElementById('toggle-novos-label');
+let ativo = '{{ apenas_novos }}' === '1';
+
+function atualizarToggle() {
+  track.style.background = ativo ? '#2563EB' : '#333';
+  thumb.style.left = ativo ? '19px' : '3px';
+  text.textContent = ativo ? 'Apenas novos' : 'Todos';
+  text.style.color = ativo ? '#60a5fa' : '#4a6580';
+  const novoValor = ativo ? '1' : '0';
+  ['btn-comunicados', 'btn-termos'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.href = btn.href.replace(/apenas_novos=\d/, `apenas_novos=${novoValor}`);
+  });
+}
+
+label.addEventListener('click', function() {
+  ativo = !ativo;
+  atualizarToggle();
+});
+</script>
+
+<script>
+(function () {
+  const MODAL_ID = 'modal-termo-comunicado';
+
+  // [TESTE] <main class="page-content"> anima com transform:translateY, o
+  // que cria containing block novo pra descendentes position:fixed — o
+  // modal ficava "preso" relativo ao <main> em vez da viewport, aparecendo
+  // fora da área visível quando a lista estava rolada. Reparenta pro <body>
+  // (fora do container transformado) pra fixed funcionar de verdade.
+  const modalEl = document.getElementById(MODAL_ID);
+  if (modalEl) document.body.appendChild(modalEl);
+
+  const inpVistoria    = document.getElementById('tc-data-vistoria');
+  const inpRevistoria  = document.getElementById('tc-data-revistoria');
+  const padraoRev      = document.getElementById('tc-revistoria-padrao');
+  const inpMotivo      = document.getElementById('tc-motivo-festa');
+  const inpComunicado  = document.getElementById('tc-comunicado-texto');
+  const btnSalvar      = document.getElementById('tc-salvar');
+  let reservaIdAtual = null;
+
+  function abrirEdicao(btn) {
+    reservaIdAtual = btn.dataset.id;
+    inpVistoria.value    = btn.dataset.dataVistoria || '';
+    inpRevistoria.value  = btn.dataset.revistoriaOverride || '';
+    padraoRev.textContent = 'Padrão (D+1): ' + (btn.dataset.diaRevistoria
+      ? btn.dataset.diaRevistoria.split('-').reverse().join('/') : '—');
+    inpMotivo.value       = btn.dataset.motivoFesta || '';
+    inpComunicado.value   = btn.dataset.comunicadoOverride || '';
+    abrirModal(MODAL_ID);  // função global definida em base.html
+  }
+
+  function fechar() {
+    fecharModal(MODAL_ID);  // função global definida em base.html
+    reservaIdAtual = null;
+  }
+
+  document.querySelectorAll('.btn-editar-termo').forEach(btn => {
+    btn.addEventListener('click', () => abrirEdicao(btn));
+  });
+
+  document.getElementById('tc-fechar').addEventListener('click', fechar);
+  document.getElementById('tc-cancelar').addEventListener('click', fechar);
+
+  btnSalvar.addEventListener('click', function () {
+    if (!reservaIdAtual) return;
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+
+    fetch('/api/reservas/' + reservaIdAtual + '/termo-comunicado', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data_vistoria:             inpVistoria.value,
+        data_revistoria_override:  inpRevistoria.value,
+        motivo_festa:              inpMotivo.value,
+        comunicado_texto_override: inpComunicado.value
+      })
+    })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(() => { fechar(); location.reload(); })
+    .catch(() => alert('Erro ao salvar. Tente novamente.'))
+    .finally(() => { btnSalvar.disabled = false; btnSalvar.textContent = 'Salvar'; });
+  });
+})();
+</script>
+
+{% endblock %}

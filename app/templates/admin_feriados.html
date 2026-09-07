@@ -1,0 +1,129 @@
+﻿{% extends 'base.html' %}
+{% block title %}Admin · Feriados — CondoReservas{% endblock %}
+{% block page_title %}Admin{% endblock %}
+
+{% macro admin_nav(ativo) %}
+<div style="display:flex;gap:6px;margin-bottom:28px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',  'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes', 'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios', 'ban',              'Bloqueios'),
+    ('relatorios.admin_historico', 'list-details',     'Histórico'),
+    ('relatorios.admin_creditos',  'credit-card',      'Créditos'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s;
+    {% if ativo == label %}background:rgba(59,130,246,0.18);border:0.5px solid rgba(59,130,246,0.35);color:#60a5fa
+    {% else %}background:transparent;border:0.5px solid rgba(255,255,255,0.08);color:#4a6580{% endif %}"
+    {% if ativo != label %}
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='#909090'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#4a6580'"
+    {% endif %}>
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% block content %}
+{{ admin_nav('Feriados') }}
+
+<div style="max-width:600px;display:flex;flex-direction:column;gap:16px">
+
+  <!-- Lista feriados -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+        <i class="ti ti-calendar-event" style="font-size:15px;color:#60a5fa"></i>
+        Feriados Cadastrados
+      </h3>
+      <span style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.07);color:#4a6580;font-size:11px;padding:3px 12px;border-radius:100px">
+        {{ feriados|length }} feriados
+      </span>
+    </div>
+
+    <div style="padding:16px 22px;display:flex;flex-wrap:wrap;gap:8px">
+      {% if feriados %}
+        {% for f in feriados %}
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(121,31,31,0.12);border:0.5px solid rgba(121,31,31,0.25);padding:5px 10px 5px 12px;border-radius:100px;transition:background 0.15s"
+          onmouseover="this.style.background='rgba(121,31,31,0.18)'" onmouseout="this.style.background='rgba(121,31,31,0.12)'">
+          <i class="ti ti-calendar-x" style="font-size:12px;color:#d07070"></i>
+          <span style="font-size:12px;font-weight:600;color:#ebebeb">{{ f.nome }}</span>
+          <span style="font-size:11px;color:#d07070;font-family:monospace">{{ '%02d/%02d'|format(f.dia, f.mes) }}{% if f.ano %}/{{ f.ano }}{% endif %}</span>
+          <form method="POST" action="{{ url_for('relatorios.excluir_feriado', id=f.id) }}" style="display:inline;margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+              style="background:transparent;border:none;cursor:pointer;color:#404040;padding:0;line-height:1;font-size:13px;transition:color 0.15s;display:flex;align-items:center"
+              onmouseover="this.style.color='#d07070'" onmouseout="this.style.color='#404040'">
+              <i class="ti ti-x"></i>
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="width:100%;padding:32px 0;text-align:center">
+        <i class="ti ti-calendar-off" style="font-size:32px;color:#303030;display:block;margin-bottom:10px"></i>
+        <p style="font-size:13px;color:#4a6580;margin:0">Nenhum feriado cadastrado.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Adicionar feriado -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="background:linear-gradient(135deg,#0f1f30,#071525);padding:18px 22px;border-bottom:0.5px solid rgba(46,95,138,0.2)">
+      <h3 style="font-size:15px;font-family:'DM Serif Display',serif;color:#ebebeb;margin:0;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-calendar-plus" style="font-size:16px;color:#60a5fa"></i>
+        Adicionar Feriado
+      </h3>
+    </div>
+
+    <div style="padding:22px">
+      <form method="POST" action="{{ url_for('relatorios.novo_feriado') }}" novalidate style="display:flex;flex-direction:column;gap:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Nome</label>
+            <input type="text" name="nome" required placeholder="Ex: São João"
+              style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Dia</label>
+            <input type="number" name="dia" required min="1" max="31" placeholder="24"
+              style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Mês</label>
+            <input type="number" name="mes" required min="1" max="12" placeholder="6"
+              style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Ano <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#404040">(opcional)</span></label>
+            <input type="number" name="ano" placeholder="Ex: 2026"
+              style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+          </div>
+        </div>
+
+        <div>
+          <button type="submit"
+            style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:10px 22px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;display:inline-flex;align-items:center;gap:6px"
+            onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+            <i class="ti ti-plus" style="font-size:14px"></i> Adicionar Feriado
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

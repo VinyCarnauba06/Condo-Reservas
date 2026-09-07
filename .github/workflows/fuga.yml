@@ -1,0 +1,38 @@
+name: Rotina de Fuga — Backup de Emergência
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # toda segunda-feira às 07:00 UTC = 04:00 BRT
+  workflow_dispatch:       # permite disparo manual pela interface do GitHub
+
+jobs:
+  backup-emergencia:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Executar script de fuga
+        run: python rotina_fuga.py
+        env:
+          FLASK_ENV:              ${{ secrets.FLASK_ENV }}
+          FLASK_DEBUG:            ${{ secrets.FLASK_DEBUG }}
+          SECRET_KEY:             ${{ secrets.SECRET_KEY }}
+          ADMIN_PASSWORD:         ${{ secrets.ADMIN_PASSWORD }}
+          ENCRYPTION_KEY:         ${{ secrets.ENCRYPTION_KEY }}
+          DATABASE_URL:           ${{ secrets.DATABASE_URL }}
+          SMTP_SERVER:            ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT:              ${{ secrets.SMTP_PORT }}
+          SMTP_USER:              ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD:          ${{ secrets.SMTP_PASSWORD }}
+          BACKUP_EMAIL_DESTINO:   ${{ secrets.BACKUP_EMAIL_DESTINO }}

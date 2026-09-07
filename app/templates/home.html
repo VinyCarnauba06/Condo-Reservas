@@ -1,0 +1,246 @@
+﻿{% extends 'base.html' %}
+{% block title %}Dashboard — CondoReservas{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% macro reserva_row(r) %}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.05);gap:12px" class="last:border-0">
+  <div style="display:flex;align-items:center;gap:9px;min-width:0">
+    <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
+      {% if r.festa_condominio %}background:rgba(139,92,246,0.12);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.22)
+      {% elif r.status == 'pendente' %}background:rgba(220,120,40,0.12);color:#e07840;border:0.5px solid rgba(220,120,40,0.22)
+      {% else %}background:rgba(59,130,246,0.1);color:#60a5fa;border:0.5px solid rgba(59,130,246,0.18){% endif %}">
+      {% if r.festa_condominio %}CD{% elif r.nome_solicitante %}{{ r.nome_solicitante[0].upper() }}{% else %}?{% endif %}
+    </div>
+    <div style="min-width:0">
+      <div style="font-size:12px;font-weight:600;color:#ebebeb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        {% if r.festa_condominio %}<span style="color:#a78bfa">[Festa do Condomínio]</span>{% else %}{{ r.nome_solicitante }}<span style="color:#4a6580;font-weight:400"> · {{ r.apartamento }}</span>{% endif %}
+      </div>
+      <div style="font-size:10px;color:#4a6580;margin-top:1px">{{ r.salao.condominio.nome }} · {{ r.salao.nome }}{% if r.horario %} · {{ r.horario }}{% endif %}</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+    <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(59,130,246,0.08);color:#3D5A7A;border:0.5px solid rgba(59,130,246,0.12)">{{ r.data_festa.strftime('%d/%m') }}</span>
+    <a href="{{ url_for('reservas.editar_reserva', id=r.id) }}"
+      style="font-size:11px;font-weight:600;color:#60a5fa;text-decoration:none;padding:3px 9px;border-radius:6px;background:rgba(59,130,246,0.08);border:0.5px solid rgba(46,95,138,0.25)">
+      Ver
+    </a>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro vistoria_row(r) %}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.05);gap:12px" class="last:border-0">
+  <div style="display:flex;align-items:center;gap:9px;min-width:0">
+    <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
+      {% if r.festa_condominio %}background:rgba(139,92,246,0.12);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.22)
+      {% else %}background:rgba(200,160,40,0.1);color:#c8a840;border:0.5px solid rgba(200,160,40,0.2){% endif %}">
+      {% if r.festa_condominio %}CD{% elif r.nome_solicitante %}{{ r.nome_solicitante[0].upper() }}{% else %}?{% endif %}
+    </div>
+    <div style="min-width:0">
+      <div style="font-size:12px;font-weight:600;color:#ebebeb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        {% if r.festa_condominio %}<span style="color:#a78bfa">[Festa do Condomínio]</span>{% else %}{{ r.nome_solicitante or '(sem nome)' }}<span style="color:#4a6580;font-weight:400"> · {{ r.apartamento or '—' }}</span>{% endif %}
+      </div>
+      <div style="font-size:10px;color:#4a6580;margin-top:1px">{{ r.salao.condominio.nome }} · {{ r.salao.nome }}{% if r.horario %} · {{ r.horario }}{% endif %}</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+    <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(200,160,40,0.1);color:#c8a840;border:0.5px solid rgba(200,160,40,0.2)">
+      <i class="ti ti-eye" style="font-size:9px"></i> {{ r.data_vistoria.strftime('%d/%m') }}
+    </span>
+    <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(59,130,246,0.08);color:#60a5fa;border:0.5px solid rgba(59,130,246,0.18)">
+      <i class="ti ti-confetti" style="font-size:9px"></i> {{ r.data_festa.strftime('%d/%m') }}
+    </span>
+    <a href="{{ url_for('reservas.editar_reserva', id=r.id) }}"
+      style="font-size:11px;font-weight:600;color:#60a5fa;text-decoration:none;padding:3px 9px;border-radius:6px;background:rgba(59,130,246,0.08);border:0.5px solid rgba(46,95,138,0.25)">
+      Ver
+    </a>
+  </div>
+</div>
+{% endmacro %}
+
+
+<!-- ── Stat Cards ───────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+
+  <!-- Condomínios -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(59,130,246,0.35);border-radius:20px;padding:22px 24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(59,130,246,0.15)"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:11px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7">Condomínios</p>
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(46,95,138,0.3);display:flex;align-items:center;justify-content:center;position:relative;z-index:1">
+        <i class="ti ti-building" style="font-size:17px;color:#60a5fa"></i>
+      </div>
+    </div>
+    <p style="font-size:32px;font-weight:700;color:#ebebeb;letter-spacing:-1px;line-height:1">{{ total_condominios }}</p>
+    <p style="font-size:11px;color:#60a5fa;opacity:0.6;margin-top:4px">{{ total_saloes }} salões no total</p>
+  </div>
+
+  <!-- Reservas/mês -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px 24px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+    onclick="togglePainel('reservas-mes')"
+    onmouseover="this.style.borderColor='var(--c-primary)';this.style.transform='translateY(-3px)'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:11px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.08em">Reservas/mês</p>
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(46,95,138,0.1);border:0.5px solid rgba(46,95,138,0.2);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-calendar" style="font-size:17px;color:#60a5fa"></i>
+      </div>
+    </div>
+    <p style="font-size:32px;font-weight:700;color:#60a5fa;letter-spacing:-1px;line-height:1">{{ total_mes }}</p>
+    <p style="font-size:10px;color:#4a6580;margin-top:4px">clique para ver detalhes</p>
+  </div>
+
+  <!-- Pendentes -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px 24px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+    onclick="togglePainel('pendentes')"
+    onmouseover="this.style.borderColor='var(--c-primary)';this.style.transform='translateY(-3px)'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:11px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.08em">Pendentes</p>
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(220,120,40,0.1);border:0.5px solid rgba(220,120,40,0.2);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-clock" style="font-size:17px;color:#e07840"></i>
+      </div>
+    </div>
+    <p style="font-size:32px;font-weight:700;color:#e07840;letter-spacing:-1px;line-height:1">{{ total_pendentes }}</p>
+    <p style="font-size:10px;color:#4a6580;margin-top:4px">clique para ver detalhes</p>
+  </div>
+
+  <!-- Cancelamentos -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px 24px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+    onclick="togglePainel('cancelados')"
+    onmouseover="this.style.borderColor='var(--c-primary)';this.style.transform='translateY(-3px)'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.transform='translateY(0)'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:11px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.08em">Cancelamentos</p>
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(200,60,60,0.1);border:0.5px solid rgba(200,60,60,0.2);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-x" style="font-size:17px;color:#d07070"></i>
+      </div>
+    </div>
+    <p style="font-size:32px;font-weight:700;color:#d07070;letter-spacing:-1px;line-height:1">{{ total_cancelados }}</p>
+    <p style="font-size:10px;color:#4a6580;margin-top:4px">clique para ver detalhes</p>
+  </div>
+
+</div>
+
+<!-- ── Conteúdo principal ─────────────────────────────────── -->
+<div>
+
+    <!-- Vistorias -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+
+      <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px 24px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+        onclick="togglePainel('vistorias-hoje')"
+        onmouseover="this.style.borderColor='var(--c-primary)';this.style.transform='translateY(-3px)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <p style="font-size:11px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.08em">Vistorias Hoje</p>
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.2);display:flex;align-items:center;justify-content:center">
+            <i class="ti ti-eye-check" style="font-size:17px;color:#4ade80"></i>
+          </div>
+        </div>
+        <p style="font-size:32px;font-weight:700;color:#4ade80;letter-spacing:-1px;line-height:1">{{ vistorias_hoje }}</p>
+        <p style="font-size:10px;color:#4a6580;margin-top:4px">clique para ver detalhes</p>
+      </div>
+
+      <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px 24px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+        onclick="togglePainel('vistorias')"
+        onmouseover="this.style.borderColor='var(--c-primary)';this.style.transform='translateY(-3px)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <p style="font-size:11px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.08em">Vistorias Amanhã</p>
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(200,160,40,0.1);border:0.5px solid rgba(200,160,40,0.2);display:flex;align-items:center;justify-content:center">
+            <i class="ti ti-eye" style="font-size:17px;color:#c8a840"></i>
+          </div>
+        </div>
+        <p style="font-size:32px;font-weight:700;color:#c8a840;letter-spacing:-1px;line-height:1">{{ vistorias_amanha }}</p>
+        <p style="font-size:10px;color:#4a6580;margin-top:4px">clique para ver detalhes</p>
+      </div>
+
+    </div>
+
+    <!-- Painéis expansíveis -->
+    {% set paineis = [
+      ('reservas-mes',    '#facc15', 'ti-calendar',   'Reservas do mês',      lista_mes),
+      ('pendentes',       '#e07840', 'ti-clock',      'Reservas Pendentes',   lista_pendentes),
+      ('vistorias-hoje',  '#4ade80', 'ti-eye-check',  'Vistorias Hoje',       lista_vistorias_hoje),
+      ('vistorias',       '#facc15', 'ti-eye',        'Vistorias Amanhã',     lista_vistorias),
+      ('cancelados',      '#d07070', 'ti-x',          'Cancelamentos do mês', lista_cancelados),
+    ] %}
+    {% for pid, cor, icon, titulo, lista in paineis %}
+    <div id="painel-{{ pid }}" class="painel hidden" style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(135deg,#0f1f30,#071525);border-bottom:0.5px solid rgba(46,95,138,0.2)">
+        <h3 style="font-size:13px;font-weight:700;color:{{ cor }};display:flex;align-items:center;gap:8px;margin:0">
+          <i class="ti {{ icon }}" style="font-size:15px"></i>
+          {{ titulo }}
+          <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.06);color:#4a6580;border:0.5px solid rgba(255,255,255,0.08);margin-left:2px">{{ lista|length }}</span>
+        </h3>
+        <button onclick="togglePainel('{{ pid }}')"
+          style="background:transparent;border:none;cursor:pointer;color:#4a6580;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background cubic-bezier(0.4,0,0.2,1) 0.2s"
+          onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='#909090'"
+          onmouseout="this.style.background='transparent';this.style.color='#4a6580'">✕</button>
+      </div>
+      <div style="padding:8px 20px 12px;max-height:280px;overflow-y:auto">
+        {% if lista %}
+          {% for r in lista %}{{ vistoria_row(r) if pid in ('vistorias', 'vistorias-hoje') else reserva_row(r) }}{% endfor %}
+        {% else %}
+          <p style="font-size:12px;color:#909090;text-align:center;padding:20px 0">Nenhum item nesta categoria.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Ranking -->
+    <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-top:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+        <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;text-transform:uppercase;letter-spacing:0.04em">
+          Condomínios do Mês
+        </h3>
+        <span style="font-size:11px;color:#4a6580">{{ ranking|length }} condomínios</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        {% if ranking %}
+          {% set max_val = ranking[0][1] %}
+          {% for cond, total in ranking %}
+          {% set pct = (total / max_val * 100)|int %}
+          {% if loop.index == 1 %}{% set pos_cor = '#fbbf24' %}{% set bar_cor = '#2563eb' %}
+          {% elif loop.index == 2 %}{% set pos_cor = '#909090' %}{% set bar_cor = '#1d4ed8' %}
+          {% elif loop.index == 3 %}{% set pos_cor = '#78716c' %}{% set bar_cor = '#1e40af' %}
+          {% else %}{% set pos_cor = '#2D4A6B' %}{% set bar_cor = '#1a4a70' %}{% endif %}
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+              <span style="font-size:11px;font-weight:800;color:{{ pos_cor }};min-width:16px;text-align:center;flex-shrink:0">{{ loop.index }}</span>
+              <a href="{{ url_for('condominios.ver_condominio', id=cond.id) }}"
+                style="flex:1;font-size:12px;font-weight:600;color:#909090;text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color cubic-bezier(0.4,0,0.2,1) 0.2s"
+                onmouseover="this.style.color='#ebebeb'" onmouseout="this.style.color='#909090'">
+                {{ cond.nome }}
+              </a>
+              <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(59,130,246,0.08);color:#60a5fa;border:0.5px solid rgba(59,130,246,0.18);white-space:nowrap;flex-shrink:0">{{ total }}</span>
+            </div>
+            <div style="width:100%;background:rgba(255,255,255,0.04);border-radius:100px;height:5px;overflow:hidden;margin-left:24px">
+              <div style="width:{{ pct }}%;height:5px;border-radius:100px;background:{{ bar_cor }};transition:width 0.6s ease"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="font-size:12px;color:#909090;text-align:center;padding:16px 0">Nenhuma reserva este mês.</p>
+        {% endif %}
+      </div>
+    </div>
+
+</div><!-- /conteúdo principal -->
+
+<script>
+function togglePainel(id) {
+  const painel = document.getElementById('painel-' + id);
+  if (!painel) return;
+  const aberto = !painel.classList.contains('hidden');
+  document.querySelectorAll('.painel').forEach(p => p.classList.add('hidden'));
+  if (!aberto) painel.classList.remove('hidden');
+}
+
+
+</script>
+
+{% endblock %}

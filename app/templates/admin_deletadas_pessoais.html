@@ -1,0 +1,112 @@
+﻿{% extends 'base.html' %}
+{% block title %}LGPD Erasure — CondoReservas{% endblock %}
+{% block page_title %}LGPD · Dados Pessoais Deletados{% endblock %}
+
+{% block content %}
+
+{# ── Navegação admin ─────────────────────────────────────── #}
+<div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',          'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes',          'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios',          'ban',             'Bloqueios'),
+    ('relatorios.admin_historico',          'list-details',    'Histórico'),
+    ('relatorios.admin_creditos',           'credit-card',     'Créditos'),
+    ('relatorios.admin_audit_log',          'shield-lock',     'Audit Log'),
+    ('relatorios.admin_deletadas_pessoais', 'user-x',          'LGPD Erasure'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s;
+    {% if label == 'LGPD Erasure' %}background:rgba(121,31,31,0.2);border:0.5px solid rgba(121,31,31,0.4);color:#d07070
+    {% else %}background:transparent;border:0.5px solid rgba(255,255,255,0.06);color:#585858{% endif %}"
+    {% if label != 'LGPD Erasure' %}
+      onmouseover="this.style.borderColor='rgba(255,255,255,0.14)';this.style.color='#909090'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#585858'"
+    {% endif %}>
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Cabeçalho de compliance ──────────────────────────────── #}
+<div style="background:rgba(15,110,86,0.1);border:0.5px solid rgba(15,110,86,0.25);border-radius:16px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <i class="ti ti-certificate" style="font-size:24px;color:#4ac090;flex-shrink:0"></i>
+  <div>
+    <p style="font-size:13px;font-weight:700;color:#4ac090;margin:0 0 2px">Prova de Compliance LGPD</p>
+    <p style="font-size:12px;color:#3a9070;margin:0">
+      <strong>{{ total }}</strong> reserva{{ 's' if total != 1 }} com dados pessoais deletados conforme LGPD Art. 18, VI (direito ao esquecimento). Todas as operações estão registradas no audit log.
+    </p>
+  </div>
+</div>
+
+{# ── Tabela ──────────────────────────────────────────────── #}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border-bottom:0.5px solid rgba(46,95,138,0.2);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-user-x" style="font-size:15px;color:#d07070"></i>
+      Reservas Anonimizadas
+    </h3>
+    <span style="font-size:11px;color:#4a6580">{{ total }} registro(s)</span>
+  </div>
+
+  {% if reservas %}
+  <div style="overflow-x:auto">
+    <table class="dark-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Data da Festa</th>
+          <th>Salão</th>
+          <th>Condomínio</th>
+          <th>Status</th>
+          <th>Deletado Em</th>
+          <th>Deletado Por</th>
+          <th style="width:120px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservas %}
+        {% set audit = audit_map.get(r.id) %}
+        <tr>
+          <td style="font-family:monospace;color:#4a6580;font-size:12px">#{{ r.id }}</td>
+          <td style="white-space:nowrap">{{ r.data_festa.strftime('%d/%m/%Y') }}</td>
+          <td style="font-size:12px;color:#909090">{{ r.salao.nome }}</td>
+          <td style="font-size:12px;color:#909090">{{ r.salao.condominio.nome }}</td>
+          <td>
+            {% if r.status == 'confirmado' %}
+              <span style="padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(15,110,86,0.18);color:#4ac090;border:0.5px solid rgba(15,110,86,0.3)">Confirmado</span>
+            {% elif r.status == 'pendente' %}
+              <span style="padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(133,79,11,0.18);color:#d4a040;border:0.5px solid rgba(133,79,11,0.3)">Pendente</span>
+            {% else %}
+              <span style="padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(121,31,31,0.18);color:#d07070;border:0.5px solid rgba(121,31,31,0.3)">{{ r.status.capitalize() }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;color:#4a6580;font-family:monospace;white-space:nowrap">
+            {% if audit %}{{ audit.criado_em.strftime('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
+          </td>
+          <td style="font-size:12px;color:#4a6580">
+            {% if audit and audit.usuario %}{{ audit.usuario.nome }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align:right">
+            {% if audit %}
+            <a href="{{ url_for('relatorios.admin_audit_log') }}?acao=deletar_dados_pessoais"
+              style="font-size:11px;color:#60a5fa;text-decoration:none">
+              <i class="ti ti-shield-lock" style="font-size:11px"></i> Ver log
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="border-radius:0;border:none">
+    <i class="ti ti-user-check empty-icon"></i>
+    <p style="font-weight:600;font-size:14px;color:#909090">Nenhum dado pessoal deletado ainda</p>
+    <p style="font-size:12px;color:#4a6580">Reservas com dados pessoais removidos por direito ao esquecimento (LGPD) aparecerão aqui.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

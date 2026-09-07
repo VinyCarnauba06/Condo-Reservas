@@ -1,0 +1,164 @@
+﻿{% extends 'base.html' %}
+{% block title %}Deletar Dados Pessoais — CondoReservas{% endblock %}
+{% block page_title %}Deletar Dados Pessoais (LGPD){% endblock %}
+
+{% block content %}
+
+{# ── Navegação admin ─────────────────────────────────────── #}
+<div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',          'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes',          'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios',          'ban',             'Bloqueios'),
+    ('relatorios.admin_historico',          'list-details',    'Histórico'),
+    ('relatorios.admin_creditos',           'credit-card',     'Créditos'),
+    ('relatorios.admin_audit_log',          'shield-lock',     'Audit Log'),
+    ('relatorios.admin_deletadas_pessoais', 'user-x',          'LGPD Erasure'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;background:transparent;border:0.5px solid rgba(255,255,255,0.06);color:#585858"
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.14)';this.style.color='#909090'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#585858'">
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Aviso ────────────────────────────────────────────────── #}
+<div style="background:rgba(121,31,31,0.15);border:0.5px solid rgba(121,31,31,0.35);border-radius:16px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:14px">
+  <i class="ti ti-alert-triangle" style="font-size:28px;color:#d07070;flex-shrink:0"></i>
+  <div>
+    <p style="font-size:14px;font-weight:700;color:#d07070;margin:0 0 4px">Ação Irreversível — Direito ao Esquecimento (LGPD)</p>
+    <p style="font-size:12px;color:#a07070;margin:0">Esta operação apaga permanentemente nome, telefone e apartamento desta reserva. Não é possível recuperar os dados após a exclusão. A ação será registrada no Audit Log.</p>
+  </div>
+</div>
+
+{# ── Informações da reserva ───────────────────────────────── #}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-bottom:20px">
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border-bottom:0.5px solid rgba(46,95,138,0.2);padding:14px 20px">
+    <h3 style="font-size:13px;font-weight:700;color:#909090;margin:0;text-transform:uppercase;letter-spacing:.5px">Dados da Reserva</h3>
+  </div>
+  <div style="padding:20px 24px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+      <div>
+        <p style="font-size:11px;color:#4a6580;margin:0 0 4px;font-weight:600;text-transform:uppercase">ID</p>
+        <p style="font-size:14px;color:#ebebeb;margin:0;font-family:monospace">#{{ reserva.id }}</p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:#4a6580;margin:0 0 4px;font-weight:600;text-transform:uppercase">Data da Festa</p>
+        <p style="font-size:14px;color:#ebebeb;margin:0">{{ reserva.data_festa.strftime('%d/%m/%Y') }}</p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:#4a6580;margin:0 0 4px;font-weight:600;text-transform:uppercase">Salão</p>
+        <p style="font-size:14px;color:#ebebeb;margin:0">{{ reserva.salao.nome }}</p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:#4a6580;margin:0 0 4px;font-weight:600;text-transform:uppercase">Condomínio</p>
+        <p style="font-size:14px;color:#ebebeb;margin:0">{{ reserva.salao.condominio.nome }}</p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:#4a6580;margin:0 0 4px;font-weight:600;text-transform:uppercase">Status</p>
+        <p style="font-size:14px;color:#ebebeb;margin:0">{{ reserva.status.capitalize() }}</p>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 16px;background:rgba(133,79,11,0.1);border:0.5px solid rgba(133,79,11,0.3);border-radius:10px">
+      <p style="font-size:12px;color:#d4a040;margin:0">
+        <i class="ti ti-lock" style="font-size:12px"></i>
+        Dados pessoais (nome, telefone, apartamento) estão criptografados e não serão exibidos aqui.
+      </p>
+    </div>
+  </div>
+</div>
+
+{# ── Formulário de confirmação dupla ──────────────────────── #}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border-bottom:0.5px solid rgba(46,95,138,0.2);padding:14px 20px">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-shield-check" style="font-size:15px;color:#d07070"></i>
+      Confirmação Dupla Obrigatória
+    </h3>
+  </div>
+  <div style="padding:24px">
+    <form method="post" id="deleteForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:11px;color:#4a6580;font-weight:600;text-transform:uppercase">
+            1. Confirme o ID da Reserva
+          </label>
+          <input type="text" name="reserva_id_confirmar" id="confirmId" autocomplete="off"
+            placeholder="Digite {{ reserva.id }}"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;padding:8px 12px;width:200px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.6)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.15)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'"
+            oninput="checkForm()">
+          <p style="font-size:11px;color:#4a6580;margin:0">Digite <strong style="color:#909090">{{ reserva.id }}</strong> para confirmar</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:11px;color:#4a6580;font-weight:600;text-transform:uppercase">
+            2. Digite DELETAR para confirmar
+          </label>
+          <input type="text" name="confirmacao" id="confirmText" autocomplete="off"
+            placeholder="DELETAR"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;padding:8px 12px;width:200px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.6)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.15)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'"
+            oninput="checkForm()">
+          <p style="font-size:11px;color:#4a6580;margin:0">Digite exatamente <strong style="color:#909090">DELETAR</strong> (em maiúsculas)</p>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" name="aceite" id="aceiteCheck"
+            style="width:16px;height:16px;accent-color:#d07070;cursor:pointer"
+            onchange="checkForm()">
+          <label for="aceiteCheck" style="font-size:12px;color:#909090;cursor:pointer">
+            Tenho certeza que quero apagar os dados pessoais desta reserva permanentemente.
+            Esta ação é <strong style="color:#d07070">IRREVERSÍVEL</strong> e será registrada no audit log.
+          </label>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="submit" id="deleteBtn" disabled
+            style="padding:10px 24px;background:rgba(121,31,31,0.15);border:0.5px solid rgba(121,31,31,0.3);border-radius:10px;color:#4a6580;font-size:13px;font-weight:700;cursor:not-allowed;transition:all 0.2s"
+            onclick="return confirmFinal()">
+            <i class="ti ti-trash" style="font-size:13px"></i> Deletar Dados Pessoais
+          </button>
+          <a href="{{ url_for('relatorios.admin_deletadas_pessoais') }}"
+            style="padding:10px 20px;background:transparent;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#585858;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.15s"
+            onmouseover="this.style.borderColor='rgba(255,255,255,0.16)';this.style.color='#909090'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#585858'">
+            Cancelar
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const EXPECTED_ID = '{{ reserva.id }}';
+
+function checkForm() {
+  const idOk   = document.getElementById('confirmId').value.trim()   === EXPECTED_ID;
+  const textOk = document.getElementById('confirmText').value.trim() === 'DELETAR';
+  const boxOk  = document.getElementById('aceiteCheck').checked;
+  const btn    = document.getElementById('deleteBtn');
+  const ok     = idOk && textOk && boxOk;
+  btn.disabled = !ok;
+  btn.style.background  = ok ? 'linear-gradient(135deg,#7B1E1E,#5a1515)' : 'rgba(121,31,31,0.15)';
+  btn.style.borderColor = ok ? 'rgba(121,31,31,0.5)'  : 'rgba(121,31,31,0.3)';
+  btn.style.boxShadow   = ok ? '0 4px 16px rgba(121,31,31,0.25)' : 'none';
+  btn.style.color       = ok ? '#d07070' : '#4a6580';
+  btn.style.cursor      = ok ? 'pointer' : 'not-allowed';
+  btn.style.transform   = ok ? '' : '';
+}
+
+function confirmFinal() {
+  return confirm('ÚLTIMA CHANCE: Esta ação é IRREVERSÍVEL.\nDeseja realmente deletar os dados pessoais da reserva #' + EXPECTED_ID + '?');
+}
+</script>
+
+{% endblock %}

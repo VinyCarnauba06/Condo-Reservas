@@ -1,0 +1,276 @@
+﻿{% extends 'base.html' %}
+{% block title %}Usuários — Admin{% endblock %}
+{% block page_title %}Admin · Usuários{% endblock %}
+
+{% block content %}
+
+{% set nav_links = [
+  ('relatorios.admin_feriados',  'ti-calendar-x',   'Feriados'),
+  ('relatorios.admin_pendentes', 'ti-clock',         'Pendentes'),
+  ('relatorios.admin_bloqueios', 'ti-lock',          'Bloqueios'),
+  ('relatorios.admin_historico', 'ti-history',       'Histórico'),
+  ('relatorios.admin_creditos',  'ti-credit-card',   'Créditos'),
+  ('relatorios.admin_inventario','ti-box',           'Inventário'),
+  ('relatorios.admin_regras',    'ti-file-text',     'Regras'),
+] %}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px">
+  {% for endpoint, icon, label in nav_links %}
+  <a href="{{ url_for(endpoint) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;border:0.5px solid rgba(255,255,255,0.06);color:#4a6580;background:rgba(255,255,255,0.02);transition:all 0.15s"
+    onmouseover="this.style.borderColor='#60a5fa';this.style.color='#60a5fa'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#4a6580'">
+    <i class="ti {{ icon }}" style="font-size:13px"></i>
+    <span>{{ label }}</span>
+  </a>
+  {% endfor %}
+  <a href="{{ url_for('relatorios.admin_usuarios') }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;border:0.5px solid rgba(59,130,246,0.35);color:#60a5fa;background:rgba(59,130,246,0.18);transition:all 0.15s">
+    <i class="ti ti-users" style="font-size:13px"></i>
+    <span>Usuários</span>
+  </a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+  <!-- Lista de usuários -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+    <div style="padding:14px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em">Usuários Cadastrados</span>
+      <span style="font-size:11px;color:#4a6580">{{ usuarios|length }} usuário(s)</span>
+    </div>
+    {% set ativos = usuarios|selectattr('ativo')|list|length %}
+    {% if ativos >= 6 %}
+    <div style="padding:10px 20px;background:rgba(138,80,20,0.12);border-bottom:0.5px solid rgba(138,80,20,0.3)">
+      <span style="font-size:12px;font-weight:600;color:#c07830"><i class="ti ti-alert-triangle" style="font-size:12px;margin-right:4px"></i>Limite de 6 usuários ativos atingido. Desative um usuário para criar outro.</span>
+    </div>
+    {% endif %}
+    <div>
+      {% for u in usuarios %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:0.5px solid rgba(255,255,255,0.04);gap:12px;transition:background 0.15s"
+        onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600;color:#ebebeb">{{ u.nome }}</span>
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.07);color:#4a6580">{{ u.login }}</span>
+            {% if not u.ativo %}
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(121,31,31,0.12);border:0.5px solid rgba(121,31,31,0.25);color:#d07070">Inativo</span>
+            {% endif %}
+          </div>
+          <span style="font-size:11px;color:#4a6580">Criado em {{ u.criado_em.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <div style="position:relative;flex-shrink:0">
+          <button onclick="toggleDropdown('drop-{{ u.id }}')"
+            style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;color:#909090;font-size:18px;font-weight:700;transition:all 0.15s"
+            onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            ⋯
+          </button>
+          <div id="drop-{{ u.id }}" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:14px;z-index:30;width:180px;padding:6px 0;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+            {% if u.login == 'admin' and session.get('usuario_nome') != 'Admin' %}
+              <div style="padding:10px 16px;font-size:12px;color:#4a6580;font-style:italic">Sem permissão</div>
+            {% else %}
+              <button onclick="fecharDropdowns(); abrirModal('modal-editar-{{ u.id }}')"
+                style="width:100%;text-align:left;padding:10px 16px;font-size:12px;color:#909090;background:transparent;border:none;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px"
+                onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='#ebebeb'" onmouseout="this.style.background='transparent';this.style.color='#909090'">
+                <i class="ti ti-edit" style="font-size:13px"></i> Editar nome
+              </button>
+              <button onclick="fecharDropdowns(); abrirModal('modal-senha-{{ u.id }}')"
+                style="width:100%;text-align:left;padding:10px 16px;font-size:12px;color:#909090;background:transparent;border:none;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px"
+                onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='#ebebeb'" onmouseout="this.style.background='transparent';this.style.color='#909090'">
+                <i class="ti ti-key" style="font-size:13px"></i> Alterar senha
+              </button>
+              {% if u.login != 'admin' %}
+                <div style="border-top:0.5px solid rgba(255,255,255,0.05);margin:4px 0"></div>
+                {% if u.ativo %}
+                  <button onclick="fecharDropdowns(); abrirModal('modal-toggle-{{ u.id }}')"
+                    style="width:100%;text-align:left;padding:10px 16px;font-size:12px;color:#d07070;background:transparent;border:none;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px"
+                    onmouseover="this.style.background='rgba(208,112,112,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="ti ti-ban" style="font-size:13px"></i> Desativar
+                  </button>
+                {% else %}
+                  <button onclick="fecharDropdowns(); abrirModal('modal-toggle-{{ u.id }}')"
+                    style="width:100%;text-align:left;padding:10px 16px;font-size:12px;color:#4ac090;background:transparent;border:none;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px"
+                    onmouseover="this.style.background='rgba(74,192,144,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="ti ti-check" style="font-size:13px"></i> Ativar
+                  </button>
+                  <button onclick="fecharDropdowns(); abrirModal('modal-excluir-{{ u.id }}')"
+                    style="width:100%;text-align:left;padding:10px 16px;font-size:12px;color:#d07070;background:transparent;border:none;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px"
+                    onmouseover="this.style.background='rgba(208,112,112,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="ti ti-trash" style="font-size:13px"></i> Excluir usuário
+                  </button>
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Novo Usuário -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#0f1f30,#071525);border-bottom:0.5px solid rgba(46,95,138,0.2);padding:20px 24px">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#ebebeb;margin:0 0 4px;display:flex;align-items:center;gap:8px">
+        <i class="ti ti-user-plus" style="font-size:18px;color:#60a5fa"></i> Novo Usuário
+      </h2>
+      <p style="font-size:12px;color:#909090;margin:0">Crie um novo acesso ao sistema</p>
+    </div>
+    <div style="padding:24px">
+      <form method="POST" action="{{ url_for('relatorios.novo_usuario') }}" style="display:flex;flex-direction:column;gap:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Nome</label>
+          <input type="text" name="nome" required placeholder="Ex: Maria Silva"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Login</label>
+          <input type="text" name="login" required placeholder="Ex: maria"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Senha</label>
+          <input type="password" name="senha" required placeholder="••••••••"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+            onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        </div>
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.15s,transform 0.15s"
+          onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          <i class="ti ti-user-plus" style="margin-right:4px"></i> Criar Usuário
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modais -->
+{% for u in usuarios %}
+<div id="modal-editar-{{ u.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center">
+  <div style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;width:100%;max-width:360px;margin:0 16px;box-shadow:0 24px 64px rgba(0,0,0,0.7)">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-edit" style="color:#60a5fa"></i> Editar nome
+    </h3>
+    <form method="POST" action="{{ url_for('relatorios.editar_usuario', id=u.id) }}" style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="nome" value="{{ u.nome }}" required
+        style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+        onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      <div style="display:flex;gap:8px">
+        <button type="submit" style="flex:1;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)">Salvar</button>
+        <button type="button" onclick="fecharModal('modal-editar-{{ u.id }}')" style="flex:1;background:transparent;color:#909090;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-senha-{{ u.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center">
+  <div style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;width:100%;max-width:360px;margin:0 16px;box-shadow:0 24px 64px rgba(0,0,0,0.7)">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 6px;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-key" style="color:#60a5fa"></i> Alterar senha
+    </h3>
+    <p style="font-size:12px;color:#4a6580;margin:0 0 16px">Nova senha para <strong style="color:#909090">{{ u.nome }}</strong></p>
+    <form method="POST" action="{{ url_for('relatorios.alterar_senha', id=u.id) }}" style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="password" name="senha" required placeholder="Nova senha"
+        style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+        onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      <div style="display:flex;gap:8px">
+        <button type="submit" style="flex:1;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)">Salvar</button>
+        <button type="button" onclick="fecharModal('modal-senha-{{ u.id }}')" style="flex:1;background:transparent;color:#909090;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-toggle-{{ u.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center">
+  <div style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;width:100%;max-width:360px;margin:0 16px;box-shadow:0 24px 64px rgba(0,0,0,0.7)">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 6px">Confirmar ação</h3>
+    <p style="font-size:12px;color:#4a6580;margin:0 0 16px">Digite a senha do admin para <strong style="color:#909090">{% if u.ativo %}desativar{% else %}ativar{% endif %} {{ u.nome }}</strong>.</p>
+    <input type="password" id="senha-toggle-{{ u.id }}" placeholder="Senha do admin"
+      style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:12px;transition:border-color 0.15s,box-shadow 0.15s"
+      onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+      onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+    <div style="display:flex;gap:8px">
+      <form method="POST" action="{{ url_for('relatorios.toggle_usuario', id=u.id) }}" id="form-toggle-{{ u.id }}" style="flex:1;display:contents">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="senha_admin" id="hidden-toggle-{{ u.id }}">
+        <button type="button" onclick="submeterComSenha('toggle', {{ u.id }})"
+          style="flex:1;background:{% if u.ativo %}#7B1E1E{% else %}#0F6E56{% endif %};color:#fff;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:none;cursor:pointer">
+          Confirmar
+        </button>
+      </form>
+      <button type="button" onclick="fecharModal('modal-toggle-{{ u.id }}')" style="flex:1;background:transparent;color:#909090;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-excluir-{{ u.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center">
+  <div style="background:#152338;border:0.5px solid rgba(121,31,31,0.4);border-radius:20px;padding:24px;width:100%;max-width:360px;margin:0 16px;box-shadow:0 24px 64px rgba(0,0,0,0.7)">
+    <h3 style="font-size:14px;font-weight:700;color:#d07070;margin:0 0 6px;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-trash"></i> Excluir usuário
+    </h3>
+    <p style="font-size:12px;color:#4a6580;margin:0 0 16px">Digite a senha do admin para excluir permanentemente <strong style="color:#909090">{{ u.nome }}</strong>.</p>
+    <input type="password" id="senha-excluir-{{ u.id }}" placeholder="Senha do admin"
+      style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:12px;transition:border-color 0.15s,box-shadow 0.15s"
+      onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+      onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+    <div style="display:flex;gap:8px">
+      <form method="POST" action="{{ url_for('relatorios.excluir_usuario', id=u.id) }}" id="form-excluir-{{ u.id }}" style="flex:1;display:contents">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="senha_admin" id="hidden-excluir-{{ u.id }}">
+        <button type="button" onclick="submeterComSenhaExcluir({{ u.id }})"
+          style="flex:1;background:#7B1E1E;color:#fff;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:none;cursor:pointer">
+          Excluir
+        </button>
+      </form>
+      <button type="button" onclick="fecharModal('modal-excluir-{{ u.id }}')" style="flex:1;background:transparent;color:#909090;font-size:12px;font-weight:600;padding:9px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">Cancelar</button>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
+function toggleDropdown(id) {
+  fecharDropdowns();
+  var el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function fecharDropdowns() {
+  document.querySelectorAll('[id^="drop-"]').forEach(function(d) { d.style.display = 'none'; });
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('[id^="drop-"]') && !e.target.closest('button[onclick^="toggleDropdown"]')) {
+    fecharDropdowns();
+  }
+});
+function submeterComSenha(tipo, id) {
+  var senha = document.getElementById('senha-toggle-' + id).value;
+  if (!senha) { alert('Digite a senha do admin.'); return; }
+  document.getElementById('hidden-toggle-' + id).value = senha;
+  document.getElementById('form-toggle-' + id).submit();
+}
+function submeterComSenhaExcluir(id) {
+  var senha = document.getElementById('senha-excluir-' + id).value;
+  if (!senha) { alert('Digite a senha do admin.'); return; }
+  document.getElementById('hidden-excluir-' + id).value = senha;
+  document.getElementById('form-excluir-' + id).submit();
+}
+</script>
+
+{% endblock %}

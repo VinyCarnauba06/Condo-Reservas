@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscais por Condomínio — CondoReservas</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; font-weight: 500; -webkit-font-smoothing: antialiased;
+  background: #0c1828; color: #ebebeb; padding: 16px; padding-bottom: 100px;
+}
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.topbar-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(59,130,246,0.12); border: 0.5px solid rgba(46,95,138,0.3);
+  display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 18px; flex-shrink: 0;
+}
+.topbar h1 { font-size: 15px; font-weight: 700; margin: 0; color: #ebebeb; }
+.topbar p { font-size: 11px; color: #4a6580; margin: 2px 0 0; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  color: #60a5fa; text-decoration: none; margin-bottom: 14px;
+}
+.flash {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; margin-bottom: 14px;
+}
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+.hint {
+  font-size: 11.5px; color: #93c5fd; background: rgba(59,130,246,0.08);
+  border: 0.5px solid rgba(46,95,138,0.25); border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 16px; line-height: 1.5;
+}
+.row {
+  background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 14px;
+  padding: 14px; margin-bottom: 10px;
+}
+.row-nome { font-size: 13.5px; font-weight: 700; color: #ebebeb; margin: 0 0 8px; }
+.row select {
+  width: 100%; padding: 10px 12px; background: #152338; border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 10px; color: #e0e0e0; font-size: 13px; font-family: inherit; outline: none; cursor: pointer;
+}
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 16px;
+  background: rgba(12,24,40,0.92); backdrop-filter: blur(10px);
+  border-top: 0.5px solid rgba(255,255,255,0.08);
+}
+.btn-submit {
+  width: 100%; padding: 15px; background: linear-gradient(135deg, #2563EB, #1d4ed8);
+  box-shadow: 0 4px 16px rgba(59,130,246,0.25); color: #fff; font-size: 14px; font-weight: 700;
+  border: none; border-radius: 14px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 8px; font-family: inherit;
+}
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <div class="topbar-icon"><svg class="ti ti-users"><use href="#ti-users"></use></svg></div>
+  <div>
+    <h1>Fiscais por Condomínio</h1>
+    <p>Quem cobre cada condomínio de segunda a sexta</p>
+  </div>
+</div>
+
+<a href="{{ url_for('vistorias.painel_fiscal') }}" class="back-link">
+  <svg class="ti ti-arrow-left"><use href="#ti-arrow-left"></use></svg> Voltar ao painel
+</a>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="flash {{ category }}">
+    <svg class="ti ti-alert-circle"><use href="#ti-alert-circle"></use></svg> {{ message }}
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<p class="hint">
+  <svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg>
+  Isso define o fiscal fixo de dia de semana. Fim de semana continua sendo por reivindicação livre no painel — não muda aqui.
+</p>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% for condominio in condominios %}
+  <div class="row">
+    <p class="row-nome">{{ condominio.nome }}</p>
+    <select name="fiscal_{{ condominio.id }}">
+      <option value="">Sem fiscal definido</option>
+      {% for fiscal in fiscais %}
+      <option value="{{ fiscal.id }}" {{ 'selected' if condominio.fiscal_id == fiscal.id else '' }}>{{ fiscal.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endfor %}
+
+  <div class="footer-bar">
+    <button type="submit" class="btn-submit">
+      <svg class="ti ti-device-floppy"><use href="#ti-device-floppy"></use></svg> Salvar
+    </button>
+  </div>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações — {{ condominio.nome }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; font-weight: 500; -webkit-font-smoothing: antialiased;
+  background: #0c1828; color: #ebebeb; padding: 16px; padding-bottom: 40px;
+}
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.back-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #909090; text-decoration: none; flex-shrink: 0;
+}
+.topbar-info h1 { font-size: 16px; font-weight: 700; margin: 0; }
+.topbar-info p  { font-size: 11px; color: #4a6580; margin: 2px 0 0; }
+
+.flash { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+.section-title { font-size: 11px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px; }
+.card { background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 10px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+.field input[type="text"],
+.field input[type="number"],
+.field textarea {
+  width: 100%; background: #0c1828; border: 0.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #ebebeb; font-family: inherit; font-size: 14px;
+  padding: 11px 12px; outline: none; -webkit-appearance: none;
+}
+.field input:focus, .field textarea:focus { border-color: rgba(96,165,250,0.5); }
+.field textarea { resize: vertical; min-height: 80px; }
+
+.btn-save {
+  width: 100%; padding: 13px; border-radius: 12px; border: none;
+  background: #2563eb; color: #fff; font-family: inherit; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.btn-save:active { background: #1d4ed8; }
+
+/* regras */
+.regra-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+.regra-item:last-child { border-bottom: none; }
+.regra-texto { flex: 1; font-size: 13px; color: #ebebeb; line-height: 1.5; }
+.btn-del-regra {
+  background: rgba(127,29,29,0.2); border: 0.5px solid rgba(239,68,68,0.2);
+  border-radius: 8px; color: #fca5a5; font-size: 12px; font-weight: 700;
+  padding: 5px 8px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center;
+}
+.add-regra-row { display: flex; gap: 8px; margin-top: 12px; }
+.add-regra-row input {
+  flex: 1; background: #0c1828; border: 0.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #ebebeb; font-family: inherit; font-size: 13px;
+  padding: 10px 12px; outline: none;
+}
+.add-regra-row input:focus { border-color: rgba(96,165,250,0.5); }
+.btn-add-regra {
+  padding: 10px 14px; border-radius: 10px; border: none;
+  background: #2563eb; color: #fff; font-family: inherit; font-size: 13px;
+  font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+
+.inventario-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px; background: rgba(167,139,250,0.08);
+  border: 0.5px solid rgba(167,139,250,0.2); border-radius: 12px;
+  text-decoration: none; color: #a78bfa; font-size: 13px; font-weight: 700;
+  margin-bottom: 10px;
+}
+.inventario-link .ti { font-size: 18px; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <a href="{{ url_for('fiscal_fixo.portal') }}" class="back-btn"><svg class="ti ti-arrow-left"><use href="#ti-arrow-left"></use></svg></a>
+  <div class="topbar-info">
+    <h1>Configurações</h1>
+    <p>{{ condominio.nome }}</p>
+  </div>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {{ cat }}"><svg class="ti ti-info-circle"><use href="#ti-info-circle"></use></svg> {{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{# ── Inventário fotográfico ── #}
+{% if condominio.termo_fotografico %}
+<p class="section-title"><svg class="ti ti-camera" style="margin-right:4px"><use href="#ti-camera"></use></svg>Inventário fotográfico</p>
+{% for salao in condominio.saloes %}
+<a href="{{ url_for('fiscal_fixo.inventario', salao_id=salao.id) }}" class="inventario-link">
+  <span><svg class="ti ti-building-community" style="margin-right:6px"><use href="#ti-building-community"></use></svg>{{ salao.nome }}</span>
+  <svg class="ti ti-chevron-right"><use href="#ti-chevron-right"></use></svg>
+</a>
+{% endfor %}
+{% endif %}
+
+{# ── Salões: nome e valor ── #}
+<p class="section-title" style="margin-top:20px"><svg class="ti ti-building-community" style="margin-right:4px"><use href="#ti-building-community"></use></svg>Salões</p>
+{% for salao in condominio.saloes %}
+<div class="card">
+  <p style="font-size:12px;font-weight:700;color:#4a6580;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.4px">
+    Salão {{ loop.index }}
+  </p>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="acao" value="salvar_salao">
+    <input type="hidden" name="salao_id" value="{{ salao.id }}">
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" name="nome" value="{{ salao.nome }}" maxlength="200" required>
+    </div>
+    <div class="field">
+      <label>Valor (R$)</label>
+      <input type="number" name="valor" value="{{ salao.valor }}" min="0" step="0.01" required>
+    </div>
+    <button type="submit" class="btn-save"><svg class="ti ti-device-floppy"><use href="#ti-device-floppy"></use></svg> Salvar salão</button>
+  </form>
+</div>
+{% endfor %}
+
+{# ── Regras de uso (observações livres) ── #}
+<p class="section-title" style="margin-top:4px"><svg class="ti ti-list-check" style="margin-right:4px"><use href="#ti-list-check"></use></svg>Regras de uso</p>
+<div class="card">
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="acao" value="salvar_obs">
+    <div class="field" style="margin-bottom:0">
+      <label>Observações gerais</label>
+      <textarea name="observacoes" rows="5" maxlength="2000" placeholder="Ex: Proibido som após 22h...">{{ condominio.observacoes or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn-save" style="margin-top:12px"><svg class="ti ti-device-floppy"><use href="#ti-device-floppy"></use></svg> Salvar observações</button>
+  </form>
+</div>
+
+{# ── Regras do regimento (lista estruturada) ── #}
+<div class="card">
+  <p style="font-size:12px;font-weight:700;color:#4a6580;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.4px">
+    Regras do regimento
+  </p>
+  {% if regras %}
+    {% for regra in regras %}
+    <div class="regra-item">
+      <span class="regra-texto">{{ loop.index }}. {{ regra.texto }}</span>
+      <form method="POST" style="margin:0" onsubmit="return confirm('Remover esta regra?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="acao" value="remover_regra">
+        <input type="hidden" name="regra_id" value="{{ regra.id }}">
+        <button type="submit" class="btn-del-regra"><svg class="ti ti-trash"><use href="#ti-trash"></use></svg></button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="font-size:13px;color:#4a6580;margin:0 0 10px">Nenhuma regra cadastrada.</p>
+  {% endif %}
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="acao" value="adicionar_regra">
+    <div class="add-regra-row">
+      <input type="text" name="texto" placeholder="Nova regra..." maxlength="500" required autocomplete="off">
+      <button type="submit" class="btn-add-regra"><svg class="ti ti-plus"><use href="#ti-plus"></use></svg> Adicionar</button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

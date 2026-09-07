@@ -1,0 +1,146 @@
+﻿{% extends 'base.html' %}
+{% block title %}
+  {% if modo == 'novo' %}Novo Usuário
+  {% elif modo == 'senha' and usuario %}Trocar Senha — {{ usuario.nome }}
+  {% elif usuario %}Editar Usuário — {{ usuario.nome }}
+  {% endif %} — CondoReservas
+{% endblock %}
+{% block page_title %}
+  {% if modo == 'novo' %}Novo Usuário{% elif modo == 'senha' %}Trocar Senha{% else %}Editar Usuário{% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px">
+
+  <div style="margin-bottom:20px">
+    <a href="{{ url_for('usuarios.listar_usuarios') }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none"
+      onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar para Usuários
+    </a>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(59,130,246,0.35);border-radius:20px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(59,130,246,0.07)"></div>
+    <div style="position:relative">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0 0 6px;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-{% if modo == 'novo' %}user-plus{% elif modo == 'senha' %}lock{% else %}user-edit{% endif %}" style="font-size:20px;color:#60a5fa"></i>
+        {% if modo == 'novo' %}Novo Usuário{% elif modo == 'senha' %}Trocar Senha{% else %}Editar Usuário{% endif %}
+      </h2>
+      <p style="font-size:12px;color:#909090;margin:0">
+        {% if modo == 'novo' %}Crie um novo acesso ao sistema
+        {% elif modo == 'senha' and usuario %}Nova senha para {{ usuario.nome }}
+        {% elif usuario %}Edite os dados de {{ usuario.nome }}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px">
+    {% if modo == 'senha' %}
+    <form method="POST" action="{{ url_for('usuarios.trocar_senha', id=usuario.id) }}" style="display:flex;flex-direction:column;gap:16px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Nova Senha</label>
+        <input type="password" name="senha" required
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Confirmar Senha</label>
+        <input type="password" name="confirma" required
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      </div>
+      <div style="display:flex;gap:10px;padding-top:4px;border-top:0.5px solid rgba(255,255,255,0.05)">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.15s,transform 0.15s"
+          onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          <i class="ti ti-lock" style="margin-right:4px"></i> Salvar Senha
+        </button>
+        <a href="{{ url_for('usuarios.listar_usuarios') }}"
+          style="font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);color:#909090;text-decoration:none;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">
+          Cancelar
+        </a>
+      </div>
+    </form>
+
+    {% else %}
+    <form method="POST" action="{{ url_for('usuarios.novo_usuario') if modo == 'novo' else url_for('usuarios.editar_usuario', id=usuario.id) }}"
+      style="display:flex;flex-direction:column;gap:16px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Nome</label>
+        <input type="text" name="nome" value="{{ usuario.nome if usuario else '' }}" required
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Login</label>
+        <input type="text" name="login" value="{{ usuario.login if usuario else '' }}" required
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      </div>
+      {% if modo == 'novo' %}
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Senha</label>
+        <input type="password" name="senha" required
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      </div>
+      {% endif %}
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Perfil</label>
+        <select name="perfil"
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;cursor:pointer;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+          <option value="operador"    {% if usuario and usuario.perfil == 'operador' %}selected{% endif %}>Operador</option>
+          <option value="admin"       {% if not usuario or usuario.perfil == 'admin' %}selected{% endif %}>Admin</option>
+          <option value="fiscal"      {% if usuario and usuario.perfil == 'fiscal' %}selected{% endif %}>Fiscal</option>
+          <option value="coordenador" {% if usuario and usuario.perfil == 'coordenador' %}selected{% endif %}>Coordenador de Fiscais</option>
+          <option value="fiscal_fixo" {% if usuario and usuario.perfil == 'fiscal_fixo' %}selected{% endif %}>Fiscal Fixo</option>
+        </select>
+      </div>
+      {% if modo == 'editar' %}
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Status</label>
+        <select name="ativo"
+          style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#e0e0e0;font-size:13px;outline:none;cursor:pointer;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+          onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+          <option value="1" {% if usuario.ativo %}selected{% endif %}>Ativo</option>
+          <option value="0" {% if not usuario.ativo %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      {% endif %}
+      <div style="display:flex;gap:10px;padding-top:4px;border-top:0.5px solid rgba(255,255,255,0.05)">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.15s,transform 0.15s"
+          onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          <i class="ti ti-check" style="margin-right:4px"></i>
+          {% if modo == 'novo' %}Criar Usuário{% else %}Salvar{% endif %}
+        </button>
+        <a href="{{ url_for('usuarios.listar_usuarios') }}"
+          style="font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;background:transparent;border:0.5px solid rgba(255,255,255,0.1);color:#909090;text-decoration:none;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='#909090'">
+          Cancelar
+        </a>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

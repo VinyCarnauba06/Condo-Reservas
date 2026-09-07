@@ -1,0 +1,75 @@
+﻿{% extends 'base.html' %}
+{% block title %}Regras — {{ cond.nome }}{% endblock %}
+{% block page_title %}Regras do Regimento{% endblock %}
+
+{% block content %}
+<div style="max-width:620px">
+
+  <!-- Back link -->
+  <div style="margin-bottom:22px">
+    <a href="{{ url_for('condominios.ver_condominio', id=cond.id) }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none;transition:opacity 0.15s"
+      onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar para {{ cond.nome }}
+    </a>
+  </div>
+
+  <!-- Header card -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:26px 28px;margin-bottom:16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(46,95,138,0.07)"></div>
+    <div style="position:absolute;bottom:-20px;left:60px;width:80px;height:80px;border-radius:50%;background:rgba(59,130,246,0.05)"></div>
+    <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(59,130,246,0.35);display:flex;align-items:center;justify-content:center">
+            <i class="ti ti-file-text" style="font-size:18px;color:#60a5fa"></i>
+          </div>
+          <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0;line-height:1.1">Regras do Regimento</h2>
+        </div>
+        <p style="font-size:12px;color:#909090;margin:0">
+          <span style="color:#ebebeb;font-weight:600">{{ cond.nome }}</span>
+          <span style="color:#4a6580;margin:0 6px">·</span>
+          Uma regra por linha — serão numeradas no PDF
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+      <p style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin:0">
+        Texto das regras
+      </p>
+    </div>
+
+    <div style="padding:22px">
+      <form method="POST" style="display:flex;flex-direction:column;gap:18px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <textarea name="texto" rows="16"
+          style="width:100%;padding:14px 16px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:14px;color:#ebebeb;font-size:13px;outline:none;resize:vertical;font-family:monospace;line-height:1.65;box-sizing:border-box;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+          placeholder="Digite cada regra em uma linha separada...">{{ regra.texto if regra else '' }}</textarea>
+
+        <div style="display:flex;gap:10px;align-items:center">
+          <button type="submit"
+            style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:10px 22px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;display:inline-flex;align-items:center;gap:6px"
+            onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+            <i class="ti ti-device-floppy" style="font-size:14px"></i> Salvar
+          </button>
+          <a href="{{ url_for('condominios.ver_condominio', id=cond.id) }}"
+            style="font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;border:0.5px solid rgba(255,255,255,0.08);color:#909090;text-decoration:none;transition:all 0.15s"
+            onmouseover="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='#ebebeb'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090'">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,605 @@
+﻿{% extends 'base.html' %}
+{% block title %}{% if condominio %}Editar Condomínio{% else %}Novo Condomínio{% endif %} — CondoReservas{% endblock %}
+{% block page_title %}{% if condominio %}Editar Condomínio{% else %}Novo Condomínio{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+  .frm-input {
+    width:100%;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);
+    border-radius:12px;color:#ebebeb;font-size:13px;outline:none;box-sizing:border-box;
+    transition:border-color 0.18s ease,box-shadow 0.18s ease;font-family:inherit;
+  }
+  .frm-input:focus {
+    border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,0.12);
+  }
+  .frm-label {
+    font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;
+    letter-spacing:0.07em;margin-bottom:7px;display:block;
+  }
+  .opt-card {
+    display:flex;align-items:center;gap:8px;padding:11px 16px;
+    border:0.5px solid rgba(255,255,255,0.07);border-radius:12px;font-size:13px;
+    cursor:pointer;transition:border-color 0.18s ease,background 0.18s ease;background:#152338;
+  }
+  .opt-card:hover { border-color:#2E5F8A;background:rgba(59,130,246,0.06); }
+  .ea-pill {
+    display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;
+    font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;
+    transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .ea-pill input[type="radio"] { display:none; }
+  .zpill, .tpill {
+    display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;
+    font-size:11px;font-weight:700;cursor:pointer;border:0.5px solid;user-select:none;
+    transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .zpill input[type="radio"], .tpill input[type="radio"] { display:none; }
+  .btn-primary {
+    background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:11px 24px;
+    border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;
+    box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:transform 0.15s ease,box-shadow 0.15s ease;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-primary:hover { transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,95,138,0.32); }
+  .btn-cancel {
+    border:0.5px solid rgba(255,255,255,0.10);color:#909090;padding:11px 20px;border-radius:12px;
+    font-size:13px;font-weight:600;text-decoration:none;background:transparent;
+    transition:border-color 0.15s,color 0.15s;display:inline-flex;align-items:center;
+  }
+  .btn-cancel:hover { border-color:rgba(255,255,255,0.22);color:#ebebeb; }
+  .salao-bloco {
+    background:#152338;border:0.5px solid rgba(255,255,255,0.06);border-radius:18px;padding:20px;
+  }
+  .faixa-btn-remove {
+    font-size:11px;font-weight:700;color:#d07070;background:rgba(208,112,112,0.08);
+    border:0.5px solid rgba(208,112,112,0.2);padding:8px 10px;border-radius:10px;cursor:pointer;
+    transition:background 0.15s,border-color 0.15s;
+  }
+  .faixa-btn-remove:hover { background:rgba(208,112,112,0.15);border-color:rgba(208,112,112,0.4); }
+  .section-divider { height:0;border-top:0.5px solid rgba(255,255,255,0.05);margin:0; }
+</style>
+
+<div style="max-width:640px">
+
+  <div style="margin-bottom:22px">
+    <a href="{{ url_for('condominios.home') }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none;transition:opacity 0.15s"
+      onmouseover="this.style.opacity='0.65'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar ao Dashboard
+    </a>
+  </div>
+
+  <!-- Header card -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:26px;margin-bottom:18px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.12),transparent 70%)"></div>
+    <div style="position:absolute;bottom:-30px;left:10px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.06),transparent 70%)"></div>
+    <div style="position:relative;display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(59,130,246,0.18);border:0.5px solid rgba(46,95,138,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-building" style="font-size:18px;color:#60a5fa"></i>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0 0 4px">
+          {% if condominio %}Editar Condomínio{% else %}Novo Condomínio{% endif %}
+        </h2>
+        <p style="font-size:12px;color:#6a8aaa;margin:0">Preencha os dados abaixo</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main card -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px">
+    <form method="POST"
+          action="{{ url_for('condominios.editar_condominio', id=condominio.id) if condominio else url_for('condominios.novo_condominio') }}"
+          id="form-condominio" style="display:flex;flex-direction:column;gap:22px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- Nome -->
+      <div>
+        <label class="frm-label">Nome do Condomínio</label>
+        <input type="text" name="nome" required class="frm-input"
+          value="{{ condominio.nome if condominio else '' }}"
+          placeholder="Ex: Res. Jardim das Flores">
+      </div>
+
+      <!-- Endereço -->
+      <div>
+        <label class="frm-label">Endereço</label>
+        <input type="text" name="endereco" class="frm-input"
+          value="{{ condominio.endereco if condominio else '' }}"
+          placeholder="Ex: Rua das Flores, 100 — Cidade Exemplo/UF">
+      </div>
+
+      <!-- Exige Adimplência -->
+      <div>
+        <label class="frm-label">Exige Adimplência</label>
+        <div style="display:flex;gap:8px">
+          <label class="ea-pill" id="ea-pill-0"
+            style="{{ 'background:rgba(59,130,246,0.15);border-color:#2E5F8A;color:#60a5fa' if (not condominio or not condominio.exige_adimplencia) else 'background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580' }}">
+            <input type="radio" name="exige_adimplencia" value="0"
+              {% if not condominio or not condominio.exige_adimplencia %}checked{% endif %}
+              onchange="updateAdimplencia()">
+            <i class="ti ti-check" style="font-size:12px"></i> Não exige
+          </label>
+          <label class="ea-pill" id="ea-pill-1"
+            style="{{ 'background:rgba(138,80,20,0.15);border-color:#8A5014;color:#c07830' if (condominio and condominio.exige_adimplencia) else 'background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580' }}">
+            <input type="radio" name="exige_adimplencia" value="1"
+              {% if condominio and condominio.exige_adimplencia %}checked{% endif %}
+              onchange="updateAdimplencia()">
+            <i class="ti ti-alert-triangle" style="font-size:12px"></i> Exige
+          </label>
+        </div>
+      </div>
+
+      <!-- Emissão de documentos -->
+      <div>
+        <label class="frm-label">Emissão de Documentos</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label class="opt-card">
+            <input type="checkbox" name="emite_comunicado"
+              {% if not condominio or condominio.emite_comunicado %}checked{% endif %}
+              style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+            <i class="ti ti-file-text" style="font-size:15px;color:#60a5fa;flex-shrink:0"></i>
+            <span style="color:#c0c0c0">Emitir Comunicado</span>
+          </label>
+          <label class="opt-card">
+            <input type="checkbox" name="emite_termo"
+              {% if not condominio or condominio.emite_termo %}checked{% endif %}
+              style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+            <i class="ti ti-writing" style="font-size:15px;color:#4ac090;flex-shrink:0"></i>
+            <span style="color:#c0c0c0">Emitir Termo</span>
+          </label>
+        </div>
+      </div>
+
+      {% if condominio %}
+      <!-- [TESTE] recibo de zelador — valor cobrado do condomínio pela
+           limpeza pós-festa (Reserva.zelador=True) + observação livre (só
+           informativo, ainda não muda a geração do recibo). -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px">
+          <label class="frm-label">Valor da Limpeza (Zelador)</label>
+          <input type="text" name="valor_zelador" inputmode="decimal" placeholder="Ex: 100,00"
+            value="{{ '%.2f'|format(condominio.valor_zelador)|replace('.', ',') if condominio.valor_zelador is not none else '' }}"
+            style="width:100%;padding:10px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px">
+        </div>
+        <div style="flex:2;min-width:220px">
+          <label class="frm-label">Observação (Zelador)</label>
+          <input type="text" name="obs_zelador" maxlength="300" placeholder="Ex: Morador paga ao fiscal"
+            value="{{ condominio.obs_zelador or '' }}"
+            style="width:100%;padding:10px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px">
+        </div>
+      </div>
+
+      <!-- [TESTE] "morador paga ao fiscal" — muda a estrutura do recibo:
+           endereça ao condômino pelo nome + linha extra de assinatura
+           condômino/fiscal, em vez do recibo padrão (condomínio → administradora). -->
+      <label class="opt-card" style="width:fit-content">
+        <input type="checkbox" name="zelador_pago_direto_fiscal"
+          {% if condominio.zelador_pago_direto_fiscal %}checked{% endif %}
+          style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+        <i class="ti ti-hand-stop" style="font-size:15px;color:#fbbf24;flex-shrink:0"></i>
+        <span style="color:#c0c0c0">Morador paga direto ao fiscal (muda estrutura do recibo)</span>
+      </label>
+      {% endif %}
+
+      {% if condominio and fiscais %}
+      <!-- [TESTE] vistoria mobile — fiscal fixo pra dias de semana (seg-sex).
+           Fim de semana não usa isso, é auto-reivindicado no painel. -->
+      <div>
+        <label class="frm-label">Fiscal Responsável (dias de semana)</label>
+        <select name="fiscal_id"
+          style="width:100%;padding:10px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px">
+          <option value="">— Nenhum designado (aparece pra todos os fiscais) —</option>
+          {% for f in fiscais %}
+          <option value="{{ f.id }}" {{ 'selected' if condominio.fiscal_id == f.id else '' }}>{{ f.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- [TESTE] fiscal próprio (seg-sáb) — só entra em vigor com "Emitir
+           Termo" ativo. Quando marcado, a vistoria/revistoria só é da Administradora se
+           cair domingo; segunda a sábado o fiscal próprio do condomínio cobre. -->
+      <label class="opt-card" style="width:fit-content">
+        <input type="checkbox" name="fiscal_proprio_seg_sab"
+          {% if condominio.fiscal_proprio_seg_sab %}checked{% endif %}
+          style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+        <i class="ti ti-user-shield" style="font-size:15px;color:#fbbf24;flex-shrink:0"></i>
+        <span style="color:#c0c0c0">Tem fiscal próprio (seg-sáb) — Administradora só vai no domingo</span>
+      </label>
+
+      <!-- [TESTE] termo na portaria — só faz sentido junto com fiscal
+           próprio. Troca o termo legal completo por um aviso simples de
+           apoio fiscal pro domingo (Residencial Costa Azul, Edifício Panorama). -->
+      <label class="opt-card" style="width:fit-content">
+        <input type="checkbox" name="termo_na_portaria"
+          {% if condominio.termo_na_portaria %}checked{% endif %}
+          style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+        <i class="ti ti-door" style="font-size:15px;color:#4ac090;flex-shrink:0"></i>
+        <span style="color:#c0c0c0">Termo já está na portaria — gerar só aviso de apoio fiscal</span>
+      </label>
+
+      <!-- [FEATURE] fiscal_fixo — usuário com acesso exclusivo ao portal deste condomínio -->
+      {% if fiscais_fixos is defined and fiscais_fixos %}
+      <div>
+        <label class="frm-label">Fiscal Fixo (portal exclusivo)</label>
+        <select name="fiscal_fixo_id"
+          style="width:100%;padding:10px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px">
+          <option value="">— Nenhum —</option>
+          {% for f in fiscais_fixos %}
+          <option value="{{ f.id }}" {{ 'selected' if condominio.fiscal_id == f.id else '' }}>{{ f.nome }}</option>
+          {% endfor %}
+        </select>
+        <p style="font-size:10px;color:#404040;margin-top:5px">Usuário com perfil Fiscal Fixo vinculado a este condomínio</p>
+      </div>
+
+      <!-- [FEATURE] termo fotográfico — ativa inventário com fotos no portal do fiscal fixo -->
+      <label class="opt-card" style="width:fit-content">
+        <input type="checkbox" name="termo_fotografico"
+          {% if condominio.termo_fotografico %}checked{% endif %}
+          style="accent-color:#7c3aed;width:14px;height:14px;flex-shrink:0">
+        <i class="ti ti-camera" style="font-size:15px;color:#a78bfa;flex-shrink:0"></i>
+        <span style="color:#c0c0c0">Inventário fotográfico (termos com fotos — ex: KAÁ)</span>
+      </label>
+      {% endif %}
+
+      {% endif %}
+
+      <!-- Observações -->
+      <div>
+        <label class="frm-label">Observações</label>
+        <textarea name="observacoes" class="frm-input"
+          placeholder="Regras internas, particularidades..."
+          style="resize:vertical;min-height:76px;line-height:1.5">{{ condominio.observacoes if condominio else '' }}</textarea>
+      </div>
+
+      <!-- Quantidade de cópias do comunicado + obs adicionais -->
+      <div style="display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:start">
+        <div>
+          <label class="frm-label">Cópias por Comunicado</label>
+          <input type="number" name="qtd_comunicados" min="1" max="10" class="frm-input"
+            value="{{ condominio.qtd_comunicados if condominio else 3 }}"
+            placeholder="3">
+          <p style="font-size:10px;color:#404040;margin-top:5px">Cópias impressas geradas por reserva (1–10)</p>
+        </div>
+        <div>
+          <label class="frm-label">Observações Adicionais do Salão <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#404040">(opcional)</span></label>
+          <textarea name="comunicados_salao" class="frm-input"
+            placeholder="Ex: Proibido som após 22h. Área da churrasqueira disponível apenas aos sábados..."
+            style="resize:vertical;min-height:76px;line-height:1.5">{{ condominio.comunicados_salao if condominio and condominio.comunicados_salao else '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- Salões (só novo) -->
+      {% if not condominio %}
+      <hr class="section-divider">
+      <div>
+        <h3 style="font-size:12px;font-weight:700;color:#909090;margin:0 0 16px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:0.07em">
+          <i class="ti ti-door" style="color:#60a5fa;font-size:14px"></i> Salões
+        </h3>
+        <div id="saloes-container">
+          <div class="salao-bloco">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+              <button type="button" class="btn-remove-salao" onclick="removerSalao(this)"
+                style="display:none;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#d07070;background:rgba(208,112,112,0.08);border:0.5px solid rgba(208,112,112,0.2);padding:6px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s">
+                <i class="ti ti-x" style="font-size:11px"></i> Remover salão
+              </button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+              <div>
+                <label class="frm-label">Nome do Salão</label>
+                <input type="text" name="salao_nome" class="frm-input" placeholder="Ex: Salão Principal">
+              </div>
+              <div>
+                <label class="frm-label">Valor (R$)</label>
+                <input type="number" step="0.01" min="0" name="salao_valor" class="frm-input" placeholder="Ex: 350.00">
+              </div>
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="frm-label">Forma de Pagamento</label>
+              <select name="salao_forma" class="frm-input" style="cursor:pointer">
+                <option value="Boleto Antecipado">Boleto Antecipado</option>
+                <option value="Boleto Condomínio">Boleto Condomínio</option>
+              </select>
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="frm-label">Zelador para Limpeza</label>
+              <div class="zelador-pills" style="display:flex;gap:8px;flex-wrap:wrap">
+                <label class="zpill" style="background:rgba(59,130,246,0.15);border-color:#2E5F8A;color:#60a5fa">
+                  <input type="radio" name="salao_zelador" value="nunca" checked>
+                  <i class="ti ti-ban" style="font-size:12px"></i> Nunca
+                </label>
+                <label class="zpill" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580">
+                  <input type="radio" name="salao_zelador" value="opcional">
+                  <i class="ti ti-help" style="font-size:12px"></i> Opcional
+                </label>
+                <label class="zpill" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580">
+                  <input type="radio" name="salao_zelador" value="sempre">
+                  <i class="ti ti-brush" style="font-size:12px"></i> Sempre
+                </label>
+                <label class="zpill" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580">
+                  <input type="radio" name="salao_zelador" value="fds">
+                  <i class="ti ti-calendar-event" style="font-size:12px"></i> Só fim de semana
+                </label>
+              </div>
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="frm-label">Tipo de Ocupação</label>
+              <div class="tipo-pills" style="display:flex;gap:8px;flex-wrap:wrap">
+                <label class="tpill" style="background:rgba(59,130,246,0.15);border-color:#2E5F8A;color:#60a5fa">
+                  <input type="radio" name="salao_tipo" value="dia_inteiro" checked>
+                  <i class="ti ti-calendar" style="font-size:12px"></i> Dia inteiro
+                </label>
+                <label class="tpill" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);color:#4a6580">
+                  <input type="radio" name="salao_tipo" value="horario_fixo">
+                  <i class="ti ti-clock" style="font-size:12px"></i> Horário fixo
+                </label>
+              </div>
+            </div>
+            <div class="faixas-group" style="display:none;margin-bottom:16px">
+              <label class="frm-label">Faixas de Horário</label>
+              <div class="faixas-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+                <div class="faixa-item" style="display:flex;gap:8px;align-items:center">
+                  <input type="text" name="horario_faixa" class="frm-input" placeholder="Ex: 12h-16h" style="flex:1;width:auto">
+                  <button type="button" onclick="this.parentElement.remove()" class="faixa-btn-remove">
+                    <i class="ti ti-x" style="font-size:12px"></i>
+                  </button>
+                </div>
+              </div>
+              <button type="button" onclick="adicionarFaixaBloco(this)"
+                style="font-size:12px;font-weight:600;color:#60a5fa;background:transparent;border:0.5px solid rgba(255,255,255,0.07);padding:7px 14px;border-radius:10px;cursor:pointer;transition:border-color 0.15s"
+                onmouseover="this.style.borderColor='#60a5fa'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+                <i class="ti ti-plus" style="font-size:11px;margin-right:4px"></i> Adicionar faixa
+              </button>
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="frm-label">Grupo (opcional)</label>
+              <input type="text" name="salao_grupo" class="frm-input" placeholder="Ex: principal">
+            </div>
+            <div>
+              <label class="frm-label">Tipo de reserva no grupo</label>
+              <input type="hidden" name="salao_combo" class="combo-hidden" value="0">
+              <div class="combo-toggle" onclick="toggleComboBloco(this)"
+                style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:0.5px solid rgba(255,255,255,0.07);border-radius:14px;cursor:pointer;user-select:none;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);background:rgba(255,255,255,0.02)">
+                <div class="combo-track" style="width:38px;height:21px;border-radius:100px;position:relative;flex-shrink:0;transition:background 0.22s cubic-bezier(0.4,0,0.2,1);background:rgba(255,255,255,0.12)">
+                  <div class="combo-thumb" style="width:15px;height:15px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left 0.22s cubic-bezier(0.4,0,0.2,1);left:3px;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>
+                </div>
+                <div>
+                  <p class="combo-label-text" style="font-size:13px;font-weight:600;margin:0 0 3px;color:#909090">
+                    <i class="ti ti-map-pin" style="font-size:12px;margin-right:4px"></i>Individual — reserva avulsa
+                  </p>
+                  <p class="combo-hint-text" style="font-size:11px;color:#404040;margin:0">Ao reservar qualquer individual, este combo fica bloqueado.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="adicionarSalao()"
+          style="width:100%;margin-top:12px;font-size:13px;font-weight:600;color:#60a5fa;background:transparent;border:0.5px dashed rgba(46,95,138,0.3);padding:13px;border-radius:14px;cursor:pointer;transition:all 0.18s"
+          onmouseover="this.style.borderColor='#60a5fa';this.style.background='rgba(59,130,246,0.05)'"
+          onmouseout="this.style.borderColor='rgba(46,95,138,0.3)';this.style.background='transparent'">
+          <i class="ti ti-plus" style="font-size:13px;margin-right:6px"></i> Adicionar outro salão
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- Ações -->
+      <hr class="section-divider">
+      <div style="display:flex;gap:10px;padding-top:2px">
+        <button type="submit" class="btn-primary">
+          <i class="ti ti-check" style="font-size:14px"></i>
+          {{ 'Salvar Alterações' if condominio else 'Cadastrar Condomínio' }}
+        </button>
+        <a href="{{ url_for('condominios.home') }}" class="btn-cancel">
+          Cancelar
+        </a>
+      </div>
+    </form>
+
+    <!-- Danger zone (edição) -->
+    {% if condominio %}
+    <div style="margin-top:28px;background:rgba(100,20,20,0.12);border:0.5px solid rgba(150,40,40,0.25);border-radius:16px;padding:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(140,30,30,0.25);display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-alert-triangle" style="font-size:14px;color:#d07070"></i>
+        </div>
+        <p style="font-size:13px;font-weight:700;color:#d07070;margin:0">Zona de perigo</p>
+      </div>
+      <p style="font-size:12px;color:#4a6580;margin:0 0 16px">Excluir este condomínio removerá todos os salões e reservas vinculados. Esta ação não pode ser desfeita.</p>
+      <button type="button" onclick="abrirModal('modal-excluir-cond')"
+        style="background:linear-gradient(135deg,#7B1E1E,#5a1515);color:#fff;font-size:12px;font-weight:600;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 3px 12px rgba(100,20,20,0.3);transition:transform 0.15s,box-shadow 0.15s;display:inline-flex;align-items:center;gap:6px"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 5px 16px rgba(100,20,20,0.4)'"
+        onmouseout="this.style.transform='none';this.style.boxShadow='0 3px 12px rgba(100,20,20,0.3)'">
+        <i class="ti ti-trash" style="font-size:13px"></i> Excluir Condomínio
+      </button>
+    </div>
+
+    {% endif %}
+  </div>
+</div>
+
+{% if condominio %}
+<!-- Modal confirmação exclusão — fora de qualquer card/form para isolamento total -->
+<div id="modal-excluir-cond" class="hidden">
+  <div style="background:#111e30;border:0.5px solid rgba(150,40,40,0.35);border-radius:20px;padding:26px;width:100%;max-width:380px;margin:0 16px;box-shadow:0 24px 60px rgba(0,0,0,0.5)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(140,30,30,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-trash" style="font-size:16px;color:#d07070"></i>
+      </div>
+      <h3 style="font-size:15px;font-weight:700;color:#d07070;margin:0">Excluir Condomínio</h3>
+    </div>
+    <p style="font-size:12px;color:#606060;margin:0 0 18px;line-height:1.6">
+      Digite a senha do admin para confirmar a exclusão de <strong style="color:#a0a0a0">{{ condominio.nome }}</strong>. Esta ação é irreversível.
+    </p>
+    <form id="form-excluir-cond" method="POST" action="{{ url_for('condominios.excluir_condominio', id=condominio.id) }}" style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="password" name="senha_admin" required autocomplete="new-password" placeholder="Senha do admin"
+        style="width:100%;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.18s,box-shadow 0.18s"
+        onfocus="this.style.borderColor='#d07070';this.style.boxShadow='0 0 0 3px rgba(150,40,40,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+      <div style="display:flex;gap:8px">
+        <button type="submit"
+          style="flex:1;background:linear-gradient(135deg,#7B1E1E,#5a1515);color:#fff;font-size:12px;font-weight:600;padding:10px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 3px 10px rgba(100,20,20,0.3)">
+          Confirmar exclusão
+        </button>
+        <button type="button" onclick="fecharModal('modal-excluir-cond')"
+          style="flex:1;background:rgba(255,255,255,0.04);color:#909090;font-size:12px;font-weight:600;padding:10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.08);cursor:pointer;transition:background 0.15s"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+var ZELADOR_C = {
+  nunca:   {bg:'rgba(59,130,246,0.15)',  bc:'#2563EB', c:'#60a5fa'},
+  opcional:{bg:'rgba(138,80,20,0.15)', bc:'#8A5014', c:'#c07830'},
+  sempre:  {bg:'rgba(15,110,86,0.15)', bc:'#0F6E56', c:'#4ac090'},
+  fds:     {bg:'rgba(124,58,237,0.15)', bc:'#6D28D9', c:'#a78bfa'}
+};
+var TIPO_C = {
+  dia_inteiro: {bg:'rgba(59,130,246,0.15)',  bc:'#2563EB', c:'#60a5fa'},
+  horario_fixo:{bg:'rgba(138,80,20,0.15)', bc:'#8A5014', c:'#c07830'}
+};
+var EA_C = {
+  '0':{bg:'rgba(59,130,246,0.15)',  bc:'#2563EB', c:'#60a5fa'},
+  '1':{bg:'rgba(138,80,20,0.15)', bc:'#8A5014', c:'#c07830'}
+};
+
+function pillOn(lbl, c) {
+  lbl.style.background  = c.bg;
+  lbl.style.borderColor = c.bc;
+  lbl.style.color       = c.c;
+}
+function pillOff(lbl) {
+  lbl.style.background  = 'rgba(255,255,255,0.03)';
+  lbl.style.borderColor = 'rgba(255,255,255,0.07)';
+  lbl.style.color       = '#4a6580';
+}
+
+function updateAdimplencia() {
+  document.querySelectorAll('input[name="exige_adimplencia"]').forEach(function(inp) {
+    var lbl = inp.closest('label');
+    if (inp.checked) pillOn(lbl, EA_C[inp.value]); else pillOff(lbl);
+  });
+}
+
+function initBloco(bloco) {
+  bloco.querySelectorAll('.zelador-pills label').forEach(function(lbl) {
+    lbl.addEventListener('click', function() {
+      setTimeout(function() {
+        bloco.querySelectorAll('.zelador-pills input[type="radio"]').forEach(function(inp) {
+          if (inp.checked) pillOn(inp.closest('label'), ZELADOR_C[inp.value]);
+          else pillOff(inp.closest('label'));
+        });
+      }, 0);
+    });
+  });
+  bloco.querySelectorAll('.tipo-pills label').forEach(function(lbl) {
+    lbl.addEventListener('click', function() {
+      setTimeout(function() {
+        bloco.querySelectorAll('.tipo-pills input[type="radio"]').forEach(function(inp) {
+          if (inp.checked) pillOn(inp.closest('label'), TIPO_C[inp.value]);
+          else pillOff(inp.closest('label'));
+        });
+        var checked = bloco.querySelector('.tipo-pills input[type="radio"]:checked');
+        bloco.querySelector('.faixas-group').style.display = (checked && checked.value === 'horario_fixo') ? 'block' : 'none';
+      }, 0);
+    });
+  });
+}
+
+function toggleComboBloco(toggleEl) {
+  var hidden = toggleEl.closest('.salao-bloco').querySelector('.combo-hidden');
+  var on = hidden.value !== '1';
+  hidden.value = on ? '1' : '0';
+  toggleEl.querySelector('.combo-track').style.background = on ? '#8b5cf6' : 'rgba(255,255,255,0.12)';
+  toggleEl.querySelector('.combo-thumb').style.left = on ? '20px' : '3px';
+  toggleEl.style.borderColor = on ? 'rgba(109,40,217,0.4)' : 'rgba(255,255,255,0.07)';
+  toggleEl.style.background  = on ? 'rgba(109,40,217,0.10)' : 'rgba(255,255,255,0.02)';
+  toggleEl.querySelector('.combo-label-text').innerHTML = on
+    ? '<i class="ti ti-link" style="font-size:12px;margin-right:4px"></i>Combo — reserva conjunta'
+    : '<i class="ti ti-map-pin" style="font-size:12px;margin-right:4px"></i>Individual — reserva avulsa';
+  toggleEl.querySelector('.combo-label-text').style.color = on ? '#9d71e8' : '#909090';
+  toggleEl.querySelector('.combo-hint-text').textContent = on
+    ? 'Ao reservar este espaço, bloqueia todos os outros do grupo.'
+    : 'Ao reservar qualquer individual, este combo fica bloqueado.';
+}
+
+function makeFaixaRow() {
+  return '<div class="faixa-item" style="display:flex;gap:8px;align-items:center">'
+    + '<input type="text" name="horario_faixa" placeholder="Ex: 12h-16h"'
+    + ' style="flex:1;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.18s,box-shadow 0.18s">'
+    + '<button type="button" onclick="this.parentElement.remove()" class="faixa-btn-remove">'
+    + '<i class=\'ti ti-x\' style=\'font-size:12px\'></i></button></div>';
+}
+
+function adicionarFaixaBloco(btn) {
+  var container = btn.previousElementSibling;
+  var div = document.createElement('div');
+  div.className = 'faixa-item';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center';
+  div.innerHTML = '<input type="text" name="horario_faixa" placeholder="Ex: 17h-20h"'
+    + ' style="flex:1;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.18s,box-shadow 0.18s">'
+    + '<button type="button" onclick="this.parentElement.remove()" class="faixa-btn-remove">'
+    + '<i class=\'ti ti-x\' style=\'font-size:12px\'></i></button>';
+  container.appendChild(div);
+}
+
+function removerSalao(btn) {
+  btn.closest('.salao-bloco').remove();
+}
+
+function adicionarSalao() {
+  var template = document.querySelector('.salao-bloco');
+  var bloco = template.cloneNode(true);
+  bloco.querySelectorAll('input[type="text"], input[type="number"]').forEach(function(i) { i.value = ''; });
+  bloco.querySelectorAll('input[type="radio"]').forEach(function(i) {
+    i.checked = (i.value === 'nunca' || i.value === 'dia_inteiro');
+  });
+  bloco.querySelectorAll('.zelador-pills input[type="radio"]').forEach(function(inp) {
+    var lbl = inp.closest('label');
+    if (inp.value === 'nunca') pillOn(lbl, ZELADOR_C.nunca); else pillOff(lbl);
+  });
+  bloco.querySelectorAll('.tipo-pills input[type="radio"]').forEach(function(inp) {
+    var lbl = inp.closest('label');
+    if (inp.value === 'dia_inteiro') pillOn(lbl, TIPO_C.dia_inteiro); else pillOff(lbl);
+  });
+  bloco.querySelector('.faixas-container').innerHTML = makeFaixaRow();
+  bloco.querySelector('.faixas-group').style.display = 'none';
+  var combo = bloco.querySelector('.combo-hidden');
+  combo.value = '0';
+  var ct = bloco.querySelector('.combo-toggle');
+  ct.querySelector('.combo-track').style.background = 'rgba(255,255,255,0.12)';
+  ct.querySelector('.combo-thumb').style.left = '3px';
+  ct.style.borderColor = 'rgba(255,255,255,0.07)';
+  ct.style.background  = 'rgba(255,255,255,0.02)';
+  ct.querySelector('.combo-label-text').innerHTML = '<i class="ti ti-map-pin" style="font-size:12px;margin-right:4px"></i>Individual — reserva avulsa';
+  ct.querySelector('.combo-label-text').style.color = '#909090';
+  ct.querySelector('.combo-hint-text').textContent = 'Ao reservar qualquer individual, este combo fica bloqueado.';
+  var removeBtn = bloco.querySelector('.btn-remove-salao');
+  removeBtn.style.display = 'inline-flex';
+  bloco.style.marginTop = '12px';
+  initBloco(bloco);
+  document.getElementById('saloes-container').appendChild(bloco);
+}
+
+document.getElementById('form-condominio').addEventListener('submit', function() {
+  document.querySelectorAll('.salao-bloco').forEach(function(bloco) {
+    var faixas = Array.from(bloco.querySelectorAll('input[name="horario_faixa"]'))
+      .map(function(i) { return i.value.trim(); }).filter(function(v) { return v; });
+    var h = document.createElement('input');
+    h.type = 'hidden'; h.name = 'salao_horarios'; h.value = faixas.join(',');
+    bloco.appendChild(h);
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.salao-bloco').forEach(function(b) { initBloco(b); });
+});
+</script>
+
+{% endblock %}

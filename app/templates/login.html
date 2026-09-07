@@ -1,0 +1,355 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — CondoReservas</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+@keyframes orb-drift-a {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, -30px) scale(1.08); }
+}
+@keyframes orb-drift-b {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-30px, 40px) scale(1.06); }
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #0c1828;
+  position: relative;
+  overflow: hidden;
+}
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb-a {
+  width: 520px;
+  height: 520px;
+  top: -120px;
+  left: -100px;
+  background: radial-gradient(ellipse at center, rgba(59,130,246,0.18) 0%, transparent 70%);
+  animation: orb-drift-a 18s ease-in-out infinite alternate;
+}
+
+.orb-b {
+  width: 480px;
+  height: 480px;
+  bottom: -100px;
+  right: -80px;
+  background: radial-gradient(ellipse at center, rgba(59,130,246,0.12) 0%, transparent 70%);
+  animation: orb-drift-b 18s ease-in-out infinite alternate;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: rgba(59,130,246,0.12);
+  border: 0.5px solid rgba(46,95,138,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #60a5fa;
+}
+
+.logo-text { text-align: center; }
+.logo-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: #ebebeb;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+.logo-name span { color: #60a5fa; }
+.logo-sub {
+  font-size: 11px;
+  color: #4a6580;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.card {
+  background: #111e30;
+  border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 28px;
+  padding: 40px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+}
+
+.card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ebebeb;
+  margin: 0 0 4px;
+}
+
+.card .subtitle {
+  font-size: 12px;
+  color: #909090;
+  margin: 0 0 28px;
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(121,31,31,0.18);
+  border: 0.5px solid rgba(121,31,31,0.35);
+  color: #d07070;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.form { display: flex; flex-direction: column; gap: 18px; }
+
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #909090;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 7px;
+}
+
+.input-wrap { position: relative; }
+.input-wrap .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #4a6580;
+  pointer-events: none;
+  transition: color cubic-bezier(0.4,0,0.2,1) 0.2s;
+}
+
+.input-wrap input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: #152338;
+  border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: #e0e0e0;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all cubic-bezier(0.4,0,0.2,1) 0.2s;
+}
+
+.input-wrap input::placeholder { color: #4a6580; }
+
+.input-wrap input:focus {
+  border-color: #2E5F8A;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.input-wrap:focus-within .icon { color: #60a5fa; }
+
+/* password field: extra right padding for toggle button */
+.input-wrap input[type="password"],
+.input-wrap input[data-pw] {
+  padding-right: 44px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #4a6580;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: color cubic-bezier(0.4,0,0.2,1) 0.2s;
+}
+.pw-toggle:hover { color: #909090; }
+
+.btn-submit {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #2563EB, #1d4ed8);
+  box-shadow: 0 4px 16px rgba(59,130,246,0.25);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity cubic-bezier(0.4,0,0.2,1) 0.2s, transform cubic-bezier(0.4,0,0.2,1) 0.2s;
+  margin-top: 6px;
+  font-family: inherit;
+}
+.btn-submit:hover { transform: translateY(-1px); opacity: 0.9; }
+.btn-submit:active { transform: translateY(0); opacity: 1; }
+
+.footer-text {
+  text-align: center;
+  font-size: 11px;
+  color: #4a6580;
+  margin-top: 24px;
+  font-weight: 600;
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.login-card {
+  animation: page-in 0.4s cubic-bezier(0.4,0,0.2,1) both;
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb orb-a"></div>
+<div class="orb orb-b"></div>
+
+<div class="login-card">
+
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <i class="ti ti-building-warehouse"></i>
+    </div>
+    <div class="logo-text">
+      <div class="logo-name">PRO<span>LAR</span></div>
+      <div class="logo-sub">Sistema de Reservas</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bem-vindo de volta</h2>
+    <p class="subtitle">Entre com suas credenciais para continuar</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="error-msg">
+          <i class="ti ti-alert-circle" style="font-size:16px;flex-shrink:0"></i>
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label>Login</label>
+        <div class="input-wrap">
+          <i class="ti ti-user icon"></i>
+          <input type="text" name="login" required autofocus placeholder="Seu login">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <i class="ti ti-lock icon"></i>
+          <input type="password" name="senha" required placeholder="••••••••" id="pw-input" autocomplete="new-password">
+          <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Mostrar senha" tabindex="-1">
+            <i class="ti ti-eye" id="pw-toggle-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:-4px;margin-bottom:4px">
+        <input type="checkbox" name="lembrar" id="lembrar" value="on"
+          style="width:14px;height:14px;accent-color:#2563EB;cursor:pointer;flex-shrink:0">
+        <label for="lembrar" style="font-size:12px;color:#707070;cursor:pointer;user-select:none">
+          Lembrar a minha sessão
+        </label>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <i class="ti ti-login" style="font-size:16px"></i>
+        Entrar
+      </button>
+    </form>
+  </div>
+
+  <p class="footer-text">CarnaúbaDEV © 2026</p>
+</div>
+
+<script>
+(function () {
+  var input = document.getElementById('pw-input');
+  var btn   = document.getElementById('pw-toggle');
+  var icon  = document.getElementById('pw-toggle-icon');
+  if (!input || !btn) return;
+  btn.addEventListener('click', function () {
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    icon.className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+    btn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+  });
+})();
+</script>
+
+</body>
+</html>

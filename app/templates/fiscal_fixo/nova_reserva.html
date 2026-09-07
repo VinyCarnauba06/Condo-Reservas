@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Reserva — {{ condominio.nome }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; font-weight: 500; -webkit-font-smoothing: antialiased;
+  background: #0c1828; color: #ebebeb; padding: 16px; padding-bottom: 32px;
+}
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.back-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #909090; text-decoration: none; flex-shrink: 0;
+}
+.topbar h1 { font-size: 16px; font-weight: 700; margin: 0; }
+
+.flash { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+.flash.danger, .flash.error { background: rgba(127,29,29,0.25); color: #fca5a5; border: 0.5px solid rgba(239,68,68,0.3); }
+.flash.success { background: rgba(22,101,52,0.25); color: #86efac; border: 0.5px solid rgba(34,197,94,0.3); }
+
+/* ── Cards ── */
+.card { background: #111e30; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+.card-label { font-size: 11px; font-weight: 700; color: #4a6580; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+/* ── Select salão ── */
+select {
+  width: 100%; background: #0c1828; border: 0.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px; color: #ebebeb; font-family: inherit; font-size: 15px;
+  padding: 13px 14px; outline: none; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a6580' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+select:focus { border-color: rgba(96,165,250,0.5); }
+
+/* ── Calendário ── */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-mes { font-size: 14px; font-weight: 700; color: #ebebeb; text-transform: capitalize; }
+.cal-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #909090; cursor: pointer; user-select: none;
+}
+.cal-btn:active { background: rgba(255,255,255,0.08); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { font-size: 10px; font-weight: 700; color: #4a6580; text-align: center; padding: 4px 0; text-transform: uppercase; }
+.cal-dia {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer;
+  position: relative; user-select: none; transition: background 0.12s;
+}
+.cal-dia.vazio { cursor: default; }
+.cal-dia.passado { color: #2a3f55; cursor: default; }
+.cal-dia.hoje { border: 1.5px solid #3b82f6; color: #60a5fa; }
+.cal-dia.ocupado { color: #4a6580; cursor: not-allowed; }
+.cal-dia.ocupado::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: #ef4444;
+}
+.cal-dia.disponivel:hover { background: rgba(59,130,246,0.15); }
+.cal-dia.selecionado { background: #2563eb !important; color: #fff !important; }
+.cal-dia.selecionado::after { display: none; }
+
+/* ── Seleção atual ── */
+.sel-info { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(37,99,235,0.12); border: 0.5px solid rgba(37,99,235,0.3); margin-top: 10px; }
+.sel-info.hidden { display: none; }
+.sel-info .ti { color: #60a5fa; font-size: 16px; flex-shrink: 0; }
+.sel-info span { font-size: 13px; color: #93c5fd; font-weight: 600; }
+
+/* ── Botão continuar ── */
+.btn-submit {
+  width: 100%; padding: 16px; border-radius: 14px; border: none;
+  background: #2563eb; color: #fff; font-family: inherit; font-size: 15px;
+  font-weight: 700; cursor: pointer; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity 0.15s;
+}
+.btn-submit:disabled { opacity: 0.35; pointer-events: none; }
+.btn-submit:active { background: #1d4ed8; }
+
+.info { font-size: 12px; color: #4a6580; margin-top: 10px; text-align: center; line-height: 1.5; }
+</style>
+</head>
+<body>
+{% include '_fiscal_icons.html' %}
+
+<div class="topbar">
+  <a href="{{ url_for('fiscal_fixo.portal') }}" class="back-btn"><svg class="ti ti-arrow-left"><use href="#ti-arrow-left"></use></svg></a>
+  <h1>Nova Reserva</h1>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="flash {{ cat }}"><svg class="ti ti-alert-circle"><use href="#ti-alert-circle"></use></svg> {{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('fiscal_fixo.nova_reserva') }}" id="form-reserva">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="salao_id" id="inp-salao">
+  <input type="hidden" name="data_festa" id="inp-data">
+
+  {# ── 1. Selecionar salão ── #}
+  <div class="card">
+    <p class="card-label"><svg class="ti ti-building-community" style="margin-right:4px"><use href="#ti-building-community"></use></svg>Salão</p>
+    <select id="sel-salao" onchange="onSalaoChange()" required>
+      <option value="">Selecione o salão...</option>
+      {% for s in saloes %}
+      <option value="{{ s.id }}">{{ s.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {# ── 2. Calendário ── #}
+  <div class="card">
+    <div class="cal-nav">
+      <div class="cal-btn" onclick="mudarMes(-1)"><svg class="ti ti-chevron-left"><use href="#ti-chevron-left"></use></svg></div>
+      <span class="cal-mes" id="cal-titulo"></span>
+      <div class="cal-btn" onclick="mudarMes(1)"><svg class="ti ti-chevron-right"><use href="#ti-chevron-right"></use></svg></div>
+    </div>
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-dow">D</div>
+      <div class="cal-dow">S</div>
+      <div class="cal-dow">T</div>
+      <div class="cal-dow">Q</div>
+      <div class="cal-dow">Q</div>
+      <div class="cal-dow">S</div>
+      <div class="cal-dow">S</div>
+    </div>
+
+    <div class="sel-info hidden" id="sel-info">
+      <svg class="ti ti-calendar-check"><use href="#ti-calendar-check"></use></svg>
+      <span id="sel-texto"></span>
+    </div>
+  </div>
+
+  <button type="submit" class="btn-submit" id="btn-continuar" disabled>
+    <svg class="ti ti-arrow-right"><use href="#ti-arrow-right"></use></svg> Continuar
+  </button>
+  <p class="info">Você será levado ao formulário completo de reserva.</p>
+</form>
+
+<script>
+const OCUPADOS  = {{ ocupados_json | tojson }};
+const HOJE_ISO  = '{{ hoje.isoformat() }}';
+const MESES     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let anoAtual  = parseInt(HOJE_ISO.slice(0,4));
+let mesAtual  = parseInt(HOJE_ISO.slice(5,7)) - 1; // 0-based
+let dataSel   = null; // ISO string
+let salaoSel  = null; // string id
+
+function onSalaoChange() {
+  const sel = document.getElementById('sel-salao');
+  salaoSel  = sel.value || null;
+  document.getElementById('inp-salao').value = salaoSel || '';
+  renderCal();
+  atualizarBotao();
+}
+
+function mudarMes(delta) {
+  mesAtual += delta;
+  if (mesAtual < 0)  { mesAtual = 11; anoAtual--; }
+  if (mesAtual > 11) { mesAtual = 0;  anoAtual++; }
+  dataSel = null;
+  document.getElementById('inp-data').value = '';
+  renderCal();
+  atualizarBotao();
+}
+
+function selDia(iso) {
+  dataSel = iso;
+  document.getElementById('inp-data').value = iso;
+  renderCal();
+  atualizarBotao();
+  // Pill de data selecionada
+  const partes = iso.split('-');
+  const d = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
+  const label = d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  document.getElementById('sel-texto').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  document.getElementById('sel-info').classList.remove('hidden');
+}
+
+function atualizarBotao() {
+  const ok = salaoSel && dataSel;
+  document.getElementById('btn-continuar').disabled = !ok;
+}
+
+function renderCal() {
+  const grid = document.getElementById('cal-grid');
+  // Remove dias antigos (mantém os 7 cabeçalhos DOW)
+  while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+  document.getElementById('cal-titulo').textContent = MESES[mesAtual] + ' ' + anoAtual;
+
+  const ocupadosDeste = salaoSel ? (OCUPADOS[salaoSel] || []) : [];
+  const ocupadosSet   = new Set(ocupadosDeste);
+
+  const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay(); // 0=Dom
+  const totalDias   = new Date(anoAtual, mesAtual + 1, 0).getDate();
+
+  // Células vazias antes do dia 1
+  for (let i = 0; i < primeiroDia; i++) {
+    const vz = document.createElement('div');
+    vz.className = 'cal-dia vazio';
+    grid.appendChild(vz);
+  }
+
+  for (let d = 1; d <= totalDias; d++) {
+    const mm  = String(mesAtual + 1).padStart(2, '0');
+    const dd  = String(d).padStart(2, '0');
+    const iso = anoAtual + '-' + mm + '-' + dd;
+
+    const cel = document.createElement('div');
+    cel.textContent = d;
+
+    const passado  = iso < HOJE_ISO;
+    const ehHoje   = iso === HOJE_ISO;
+    const ocupado  = ocupadosSet.has(iso);
+    const selecion = iso === dataSel;
+
+    if (selecion) {
+      cel.className = 'cal-dia selecionado';
+    } else if (passado) {
+      cel.className = 'cal-dia passado';
+    } else if (ocupado) {
+      cel.className = 'cal-dia ocupado' + (ehHoje ? ' hoje' : '');
+    } else {
+      cel.className = 'cal-dia disponivel' + (ehHoje ? ' hoje' : '');
+      const _iso = iso;
+      cel.addEventListener('click', function() { selDia(_iso); });
+    }
+
+    grid.appendChild(cel);
+  }
+}
+
+// Inicializa
+renderCal();
+</script>
+</body>
+</html>

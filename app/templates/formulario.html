@@ -1,0 +1,411 @@
+﻿{% extends 'base.html' %}
+{% block title %}{% if reserva %}Editar Reserva{% else %}Nova Reserva{% endif %} — CondoReservas{% endblock %}
+{% block page_title %}{% if reserva %}Editar Reserva{% else %}Nova Reserva{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+  .frm-input {
+    width:100%;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);
+    border-radius:12px;color:#ebebeb;font-size:13px;outline:none;box-sizing:border-box;
+    transition:border-color 0.18s ease,box-shadow 0.18s ease;font-family:inherit;
+  }
+  .frm-input:focus {
+    border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,0.12);
+  }
+  .frm-label {
+    font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;
+    letter-spacing:0.07em;margin-bottom:7px;display:block;
+  }
+  .opt-card {
+    display:flex;align-items:center;gap:8px;padding:11px 16px;
+    border:0.5px solid rgba(255,255,255,0.07);border-radius:12px;font-size:13px;
+    cursor:pointer;transition:border-color 0.18s ease,background 0.18s ease;background:#152338;
+  }
+  .opt-card:hover { border-color:#2E5F8A; background:rgba(59,130,246,0.06); }
+  .opt-card--blocked { cursor:not-allowed;border-color:rgba(121,31,31,0.25) !important;background:rgba(121,31,31,0.06) !important;opacity:0.55; }
+  .status-pill-lbl {
+    padding:8px 18px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;
+    border:0.5px solid;transition:all 0.22s cubic-bezier(0.4,0,0.2,1);display:inline-flex;align-items:center;gap:5px;
+    user-select:none;
+    background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.07);color:#4a6580;
+  }
+  .status-pill-lbl input[type="radio"] { display:none; }
+  .status-pill-lbl:has(input[type="radio"]:checked)[data-status="confirmado"] { background:rgba(24,95,165,0.16);border-color:rgba(46,120,190,0.4);color:#60a5fa; }
+  .status-pill-lbl:has(input[type="radio"]:checked)[data-status="pendente"]   { background:rgba(133,79,11,0.16);border-color:rgba(180,110,20,0.4);color:#d4a040; }
+  .status-pill-lbl:has(input[type="radio"]:checked)[data-type="horario"]     { background:rgba(59,130,246,0.18);border-color:rgba(46,95,138,0.45);color:#60a5fa; }
+  .btn-primary {
+    background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:11px 24px;
+    border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;
+    box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:transform 0.15s ease,box-shadow 0.15s ease;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-primary:hover { transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,95,138,0.32); }
+  .btn-cancel {
+    border:0.5px solid rgba(255,255,255,0.10);color:#909090;padding:11px 20px;border-radius:12px;
+    font-size:13px;font-weight:600;text-decoration:none;background:transparent;
+    transition:border-color 0.15s,color 0.15s;display:inline-flex;align-items:center;
+  }
+  .btn-cancel:hover { border-color:rgba(255,255,255,0.22);color:#ebebeb; }
+</style>
+
+<div style="max-width:680px">
+
+  <!-- Back -->
+  <div style="margin-bottom:22px">
+    <a href="{{ url_for('condominios.ver_condominio', id=condominio.id) }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none;transition:opacity 0.15s"
+      onmouseover="this.style.opacity='0.65'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar para {{ condominio.nome }}
+    </a>
+  </div>
+
+  <!-- Header card -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:26px;margin-bottom:18px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.12),transparent 70%)"></div>
+    <div style="position:absolute;bottom:-30px;left:10px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.06),transparent 70%)"></div>
+    <div style="position:relative">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.18);border:0.5px solid rgba(46,95,138,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-{% if reserva %}edit{% else %}calendar-plus{% endif %}" style="font-size:17px;color:#60a5fa"></i>
+        </div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0">
+          {% if reserva %}Editar Reserva{% else %}Nova Reserva{% endif %}
+        </h2>
+      </div>
+      <p style="font-size:12px;color:#6a8aaa;margin:0;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-building" style="font-size:12px"></i>
+        {{ condominio.nome }}
+        <span style="color:rgba(255,255,255,0.15)">&middot;</span>
+        <i class="ti ti-door" style="font-size:12px"></i>
+        {{ salao.nome }}
+        <span style="color:rgba(255,255,255,0.15)">&middot;</span>
+        <i class="ti ti-calendar" style="font-size:12px"></i>
+        {{ data_festa.strftime('%d/%m/%Y') }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  {% if credito %}
+  <div id="banner-credito" style="display:none;background:rgba(133,79,11,0.12);border:0.5px solid rgba(200,130,30,0.3);border-radius:14px;padding:13px 16px;font-size:13px;font-weight:600;color:#d4a040;margin-bottom:14px;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;border-radius:8px;background:rgba(133,79,11,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-credit-card" style="font-size:15px"></i>
+    </div>
+    <span>Apartamento possui crédito de <strong>R$ {{ '%.2f'|format(credito.valor) }}</strong> — será aplicado automaticamente</span>
+  </div>
+  {% endif %}
+
+  {% if regra_preview %}
+  <div id="banner-regra" style="display:none;background:rgba(22,101,52,0.12);border:0.5px solid rgba(34,197,94,0.3);border-radius:14px;padding:13px 16px;font-size:13px;font-weight:600;color:#4ade80;margin-bottom:14px;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;border-radius:8px;background:rgba(22,101,52,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-rosette-discount" style="font-size:15px"></i>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span>{{ regra_preview.descricao or '1ª reserva do ano isenta' }} — <strong>reserva gratuita</strong></span>
+      {% if regra_preview.valor_opcional %}
+      <label style="font-size:12px;font-weight:500;color:#86efac;display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px">
+        <input type="checkbox" name="usar_opcional" id="cb-opcional"
+          style="accent-color:#4ade80;width:13px;height:13px">
+        Cobrar adicional
+        <strong>+ R$ {{ '%.2f'|format(regra_preview.valor_opcional) }}</strong>
+      </label>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if erro_conflito is defined and erro_conflito %}
+  <div style="background:rgba(121,31,31,0.12);border:0.5px solid rgba(180,60,60,0.3);border-radius:14px;padding:13px 16px;font-size:13px;font-weight:600;color:#d07070;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;border-radius:8px;background:rgba(121,31,31,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-alert-circle" style="font-size:15px"></i>
+    </div>
+    <span>O horário <strong>{{ erro_conflito }}</strong> já está reservado para este dia.</span>
+  </div>
+  {% endif %}
+
+  {% if vistoria_bloqueada %}
+  <div style="background:rgba(133,79,11,0.09);border:0.5px solid rgba(133,79,11,0.28);border-radius:14px;padding:13px 16px;font-size:13px;font-weight:600;color:#c09030;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+    <div style="width:30px;height:30px;border-radius:8px;background:rgba(133,79,11,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-info-circle" style="font-size:15px"></i>
+    </div>
+    <span>Existe uma festa no dia anterior — vistoria não pode ser marcada nesse dia.</span>
+  </div>
+  {% endif %}
+
+  <!-- Form card -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px">
+    <form method="POST" style="display:flex;flex-direction:column;gap:22px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- Festa do Condomínio -->
+      <div>
+        <label class="opt-card" style="{% if reserva and reserva.festa_condominio %}border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.07);{% endif %}">
+          <input type="checkbox" name="festa_condominio" id="cb-festa-cond"
+            {% if reserva and reserva.festa_condominio %}checked{% endif %}
+            onchange="toggleFestaCond(this)"
+            style="accent-color:#8b5cf6;width:14px;height:14px;flex-shrink:0">
+          <i class="ti ti-building-community" style="font-size:15px;color:#a070d0;flex-shrink:0"></i>
+          <span style="color:#c8c8c8;font-weight:600">Festa do Condomínio</span>
+          <span style="font-size:11px;color:#4a6580;margin-left:2px">(dispensa dados pessoais)</span>
+        </label>
+      </div>
+
+      <!-- Divider -->
+      <div style="height:0;border-top:0.5px solid rgba(255,255,255,0.05)"></div>
+
+      <!-- Nome + Contato -->
+      <div id="campos-pessoais" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;{% if reserva and reserva.festa_condominio %}display:none{% endif %}">
+        <div>
+          <label class="frm-label">Nome do Solicitante</label>
+          <input type="text" name="nome_solicitante" id="inp-nome" class="frm-input"
+            value="{{ reserva.nome_solicitante if reserva else '' }}" placeholder="Ex: Maria Silva">
+        </div>
+        <div>
+          <label class="frm-label">Contato (WhatsApp)</label>
+          <input type="text" name="contato" id="inp-contato" class="frm-input"
+            value="{{ reserva.contato if reserva else '' }}" placeholder="(82) 99999-0000">
+        </div>
+      </div>
+
+      <!-- Apartamento -->
+      <div id="campo-apartamento" style="{% if reserva and reserva.festa_condominio %}display:none{% endif %}">
+        <label class="frm-label">Número do Apartamento</label>
+        <input type="text" name="apartamento" id="inp-apartamento" class="frm-input"
+          value="{{ reserva.apartamento if reserva else '' }}" placeholder="Ex: 302"
+          oninput="verificarCredito(this.value); verificarIsencao(this.value);"
+          style="width:200px;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.18s ease,box-shadow 0.18s ease;font-family:inherit">
+      </div>
+
+      <!-- Horários (se horario_fixo) -->
+      {% if salao.tipo == 'horario_fixo' and horarios_disponiveis %}
+      <div>
+        <label class="frm-label">Faixa de Horário</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for h in horarios_disponiveis %}
+          <label class="status-pill-lbl" data-type="horario">
+            <input type="radio" name="horario" value="{{ h }}" {% if reserva and reserva.horario == h %}checked{% endif %}>
+            <i class="ti ti-clock" style="font-size:11px"></i> {{ h }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Status -->
+      <div>
+        <label class="frm-label">Status da Reserva</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="status-pills">
+          {% for s, label, cls in [('confirmado','Confirmado','info'),('pendente','Pendente','warning')] %}
+          <label class="status-pill-lbl{% if (reserva and reserva.status == s) or (not reserva and s == 'confirmado') %} active{% endif %}"
+            id="pill-status-{{ s }}" data-status="{{ s }}">
+            <input type="radio" name="status" value="{{ s }}"
+              {% if (reserva and reserva.status == s) or (not reserva and s == 'confirmado') %}checked{% endif %}
+              onchange="refreshStatusPills()">
+            <i class="ti ti-{% if s == 'confirmado' %}check{% else %}clock{% endif %}" style="font-size:11px"></i>
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if reserva and saloes %}
+      <!-- Salão (apenas na edição) -->
+      <div>
+        <label class="frm-label">Salão / Espaço</label>
+        <select name="salao_id" class="frm-input" style="cursor:pointer">
+          {% for s in saloes %}
+          <option value="{{ s.id }}" {% if s.id == reserva.salao_id %}selected{% endif %}>{{ s.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Divider -->
+      <div style="height:0;border-top:0.5px solid rgba(255,255,255,0.05)"></div>
+
+      <!-- Opções -->
+      <div>
+        <label class="frm-label">Opções</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label class="opt-card{% if vistoria_bloqueada %} opt-card--blocked{% endif %}">
+            <input type="checkbox" name="vistoria"
+              {% if reserva and reserva.data_vistoria and reserva.data_vistoria < reserva.data_festa %}checked{% endif %}
+              {% if vistoria_bloqueada %}disabled{% endif %}
+              style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+            <i class="ti ti-eye" style="font-size:15px;color:#60a5fa;flex-shrink:0"></i>
+            <span style="color:#c0c0c0">Vistoria no dia anterior</span>
+            {% if vistoria_bloqueada %}<span style="font-size:11px;color:#c06060;margin-left:4px;font-weight:600">(bloqueada)</span>{% endif %}
+          </label>
+        </div><!-- fecha flex opt-cards -->
+
+        <div id="hora-vistoria-wrap" style="display:{% if not (reserva and reserva.festa_condominio) %}flex{% else %}none{% endif %};align-items:center;gap:10px;margin-top:8px;background:#0f1e2e;border:1px solid #2E5F8A;border-radius:8px;padding:8px 14px;width:fit-content;">
+          <i class="ti ti-clock" style="font-size:15px;color:#60a5fa;flex-shrink:0"></i>
+          <label style="font-size:12px;color:#8ab4d4;white-space:nowrap;font-weight:500;letter-spacing:0.03em">Horário da vistoria</label>
+          <input type="time" name="hora_vistoria" id="hora_vistoria"
+            value="{{ reserva.hora_vistoria if reserva and reserva.hora_vistoria else '' }}"
+            style="background:transparent;border:none;border-bottom:1px solid #2E5F8A;border-radius:0;color:#e0e0e0;font-size:13px;font-weight:500;padding:2px 4px;width:100px;outline:none;">
+          <span style="font-size:11px;color:#4a6a7a;font-style:italic">opcional</span>
+        </div>
+
+        <script>
+        (function () {
+          var festa = document.querySelector('input[name="festa_condominio"]');
+          var wrap  = document.getElementById('hora-vistoria-wrap');
+          if (!festa || !wrap) return;
+          festa.addEventListener('change', function () {
+            wrap.style.display = this.checked ? 'none' : 'flex';
+            if (this.checked) document.getElementById('hora_vistoria').value = '';
+          });
+        })();
+        </script>
+
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><!-- reabre flex para demais opt-cards -->
+          {% if salao.zelador == 'opcional' %}
+          <label class="opt-card">
+            <input type="checkbox" name="zelador"
+              {% if reserva and reserva.zelador %}checked{% endif %}
+              style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+            <i class="ti ti-brush" style="font-size:15px;color:#4ac090;flex-shrink:0"></i>
+            <span style="color:#c0c0c0">Zelador</span>
+          </label>
+          {% endif %}
+
+          <label class="opt-card">
+            <input type="checkbox" name="surpresa"
+              {% if reserva and reserva.surpresa %}checked{% endif %}
+              style="accent-color:#2E5F8A;width:14px;height:14px;flex-shrink:0">
+            <i class="ti ti-confetti" style="font-size:15px;color:#a070d0;flex-shrink:0"></i>
+            <span style="color:#c0c0c0">Festa Surpresa</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div>
+        <label class="frm-label">Observações</label>
+        <textarea name="observacoes" class="frm-input" placeholder="Alguma observação sobre a reserva..."
+          style="resize:vertical;min-height:84px;line-height:1.5">{{ reserva.observacoes if reserva else '' }}</textarea>
+      </div>
+
+      <!-- Ações -->
+      <div style="display:flex;gap:10px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.05)">
+        <button type="submit" class="btn-primary">
+          <i class="ti ti-check" style="font-size:14px"></i>
+          {{ 'Salvar Alterações' if reserva else 'Salvar Reserva' }}
+        </button>
+        <a href="{{ url_for('condominios.ver_condominio', id=condominio.id) }}" class="btn-cancel">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const aptoComCredito    = "{{ credito.apartamento if credito else '' }}";
+const creditoObservacao = {{ (credito.observacao or '')|tojson if credito else "''" }};
+
+{% if regra_preview %}
+const SALAO_TEM_REGRA = true;
+
+function verificarIsencao(val) {
+  var banner = document.getElementById('banner-regra');
+  if (!banner) return;
+  var cbFesta = document.getElementById('cb-festa-cond');
+  if (cbFesta && cbFesta.checked) { banner.style.display = 'none'; return; }
+  if (val && val.trim().length >= 2) {
+    fetch('/api/reserva-anual-status/{{ salao.id }}/' + encodeURIComponent(val.trim().toUpperCase()) + '/{{ condominio.id }}')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        banner.style.display = (d && d.isento) ? 'flex' : 'none';
+      })
+      .catch(function() {});
+  } else {
+    banner.style.display = 'none';
+  }
+}
+{% else %}
+const SALAO_TEM_REGRA = false;
+function verificarIsencao() {}
+{% endif %}
+
+function verificarCredito(val) {
+  var banner = document.getElementById('banner-credito');
+  if (!banner) return;
+  if (aptoComCredito && val.trim().toLowerCase() === aptoComCredito.toLowerCase()) {
+    banner.style.display = 'flex';
+    if (creditoObservacao) {
+      var obs = document.querySelector('textarea[name="observacoes"]');
+      if (obs && !obs.value) {
+        obs.value = '[Crédito] ' + creditoObservacao;
+      }
+    }
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function toggleFestaCond(cb) {
+  var pessoais   = document.getElementById('campos-pessoais');
+  var apto       = document.getElementById('campo-apartamento');
+  var bannerRegra = document.getElementById('banner-regra');
+  if (cb.checked) {
+    pessoais.style.display = 'none';
+    apto.style.display     = 'none';
+    if (bannerRegra) bannerRegra.style.display = 'none';
+    cb.closest('label').style.borderColor  = 'rgba(139,92,246,0.4)';
+    cb.closest('label').style.background   = 'rgba(139,92,246,0.07)';
+  } else {
+    pessoais.style.display = 'grid';
+    apto.style.display     = 'block';
+    cb.closest('label').style.borderColor  = 'rgba(255,255,255,0.07)';
+    cb.closest('label').style.background   = '#152338';
+  }
+}
+
+function refreshStatusPills() {
+  document.querySelectorAll('#status-pills .status-pill-lbl').forEach(function(lbl) {
+    var inp = lbl.querySelector('input[type="radio"]');
+    lbl.classList.toggle('active', inp.checked);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var cb = document.getElementById('cb-festa-cond');
+  if (cb) toggleFestaCond(cb);
+
+  // Focus style for apartment input (not using class due to inline style override)
+  var aptoInp = document.getElementById('inp-apartamento');
+  if (aptoInp) {
+    aptoInp.addEventListener('focus', function() {
+      this.style.borderColor = '#60a5fa';
+      this.style.boxShadow   = '0 0 0 3px rgba(59,130,246,0.12)';
+    });
+    aptoInp.addEventListener('blur', function() {
+      this.style.borderColor = 'rgba(255,255,255,0.08)';
+      this.style.boxShadow   = 'none';
+    });
+
+    {% if not reserva %}
+    aptoInp.addEventListener('blur', function() {
+      var apto    = this.value.trim();
+      var cbFesta = document.getElementById('cb-festa-cond');
+      if (!apto || (cbFesta && cbFesta.checked)) return;
+      fetch('/api/morador/' + encodeURIComponent(apto) + '/{{ condominio.id }}')
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+          if (!data) return;
+          var nomeInp    = document.getElementById('inp-nome');
+          var contatoInp = document.getElementById('inp-contato');
+          if (nomeInp    && data.nome)    nomeInp.value    = data.nome;
+          if (contatoInp && data.contato) contatoInp.value = data.contato;
+        })
+        .catch(function() {});
+    });
+    {% endif %}
+  }
+});
+</script>
+
+{% endblock %}

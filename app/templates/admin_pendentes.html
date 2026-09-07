@@ -1,0 +1,79 @@
+﻿{% extends 'base.html' %}
+{% block title %}Admin · Pendentes — CondoReservas{% endblock %}
+{% block page_title %}Admin · Pendentes{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',  'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes', 'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios', 'ban',              'Bloqueios'),
+    ('relatorios.admin_historico', 'list-details',     'Histórico'),
+    ('relatorios.admin_creditos',  'credit-card',      'Créditos'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s;
+    {% if label == 'Pendentes' %}background:rgba(46,95,138,0.2);border:0.5px solid rgba(46,95,138,0.4);color:#60a5fa
+    {% else %}background:transparent;border:0.5px solid rgba(255,255,255,0.06);color:#4a6580{% endif %}"
+    {% if label != 'Pendentes' %}onmouseover="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='#909090'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#4a6580'"{% endif %}>
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+  <div style="padding:16px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-clock" style="font-size:15px;color:#d4a040"></i>
+      Reservas Pendentes
+    </h3>
+    <span class="badge badge-warning">{{ pendentes|length }} pendentes</span>
+  </div>
+
+  {% if pendentes %}
+  <div style="overflow-x:auto">
+    <table class="dark-table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Condomínio</th>
+          <th>Salão</th>
+          <th>Apto</th>
+          <th>Solicitante</th>
+          <th>Registrado por</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in pendentes %}
+        <tr>
+          <td style="font-weight:700;color:#d4a040;white-space:nowrap;font-family:monospace">{{ r.data_festa.strftime('%d/%m/%Y') }}</td>
+          <td style="font-size:12px">{{ r.salao.condominio.nome }}</td>
+          <td style="font-size:12px;color:#909090">{{ r.salao.nome }}</td>
+          <td style="font-weight:700">{% if r.festa_condominio %}—{% else %}{{ r.apartamento }}{% endif %}</td>
+          <td>{% if r.festa_condominio %}[Festa do Condomínio]{% else %}{{ r.nome_solicitante }}{% endif %}</td>
+          <td style="color:#4a6580;font-size:12px">{{ r.registrado_por or '—' }}</td>
+          <td>
+            <a href="{{ url_for('reservas.editar_reserva', id=r.id) }}"
+              style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);color:#60a5fa;text-decoration:none;white-space:nowrap;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+              onmouseover="this.style.background='rgba(46,95,138,0.22)'" onmouseout="this.style.background='rgba(59,130,246,0.12)'">
+              <i class="ti ti-edit" style="font-size:11px"></i> Editar
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="border-radius:0;border:none">
+    <i class="ti ti-circle-check empty-icon" style="color:#4ac090"></i>
+    <p style="font-weight:600;font-size:14px;color:#909090">Nenhuma reserva pendente</p>
+    <p>Tudo em ordem por aqui!</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

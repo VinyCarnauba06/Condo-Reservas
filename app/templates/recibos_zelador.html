@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Recibos de Zelador — CondoReservas{% endblock %}
+{% block page_title %}Recibos de Zelador{% endblock %}
+
+{% block content %}
+<div style="max-width:920px">
+
+  <!-- ── Header card ──────────────────────────────────────── -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%)"></div>
+    <div style="position:relative;display:flex;align-items:center;gap:14px">
+      <div style="width:46px;height:46px;border-radius:14px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(46,95,138,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-receipt" style="font-size:22px;color:#60a5fa"></i>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:23px;color:#ebebeb;margin:0 0 5px;letter-spacing:-0.2px">Recibos de Zelador</h2>
+        <p style="font-size:12px;color:#909090;margin:0">Recibo de "Pago à Administradora" por limpeza pós-festa — um recibo por reserva com zelador solicitado</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filtros ──────────────────────────────────────────── -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px;margin-bottom:16px">
+    <form method="GET" action="{{ url_for('relatorios.recibos_zelador') }}" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Início</label>
+        <input type="date" name="inicio" value="{{ data_inicio.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Fim</label>
+        <input type="date" name="fim" value="{{ data_fim.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+      <button type="submit"
+        style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);display:inline-flex;align-items:center;gap:6px"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+        <i class="ti ti-filter" style="font-size:13px"></i> Filtrar
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Lista de reservas ────────────────────────────────── -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="padding:15px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">
+        {{ reservas|length }} reserva{% if reservas|length != 1 %}s{% endif %} com zelador
+      </span>
+      <span style="font-size:11px;color:#4a6580">
+        {{ data_inicio.strftime('%d/%m/%Y') }} — {{ data_fim.strftime('%d/%m/%Y') }}
+      </span>
+    </div>
+
+    {% if reservas %}
+    <div>
+      {% for r in reservas %}
+      {% set cond = r.salao.condominio %}
+      {% set falta_valor = not cond.valor_zelador %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);gap:14px">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1">
+          <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,rgba(59,130,246,0.18),rgba(59,130,246,0.07));border:0.5px solid rgba(59,130,246,0.25);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="font-size:17px;font-weight:800;color:#60a5fa;line-height:1.05;letter-spacing:-0.5px">{{ r.data_festa.strftime('%d') }}</span>
+            <span style="font-size:9px;font-weight:700;color:#909090;text-transform:uppercase;letter-spacing:0.07em">{{ r.data_festa.strftime('%b') }}</span>
+          </div>
+          <div style="min-width:0">
+            <p style="font-size:13.5px;font-weight:700;color:#ebebeb;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cond.nome }}</p>
+            <p style="font-size:11.5px;color:#4a6580;margin:0">
+              Apto {{ r.apartamento or '[Condomínio]' }} · limpeza {{ r.dia_revistoria.strftime('%d/%m') }}
+              {% if cond.obs_zelador %} · <span style="color:#909090">{{ cond.obs_zelador }}</span>{% endif %}
+            </p>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          {% if falta_valor %}
+          <span class="badge badge-warning" title="Configure o valor de limpeza em Editar Condomínio">
+            <i class="ti ti-alert-triangle" style="font-size:10px"></i> Sem valor configurado
+          </span>
+          {% else %}
+          <span style="font-size:14px;font-weight:800;color:#4ade80">R$ {{ '%.2f'|format(cond.valor_zelador)|replace('.', ',') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ── Ações ────────────────────────────────────────────── -->
+    <div style="padding:16px 22px;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:rgba(0,0,0,0.15)">
+      <a href="{{ url_for('relatorios.recibos_zelador') }}?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}&pdf=1"
+        target="_blank"
+        style="font-size:13px;font-weight:600;padding:9px 18px;border-radius:12px;background:rgba(74,222,128,0.12);border:0.5px solid rgba(74,222,128,0.28);color:#4ade80;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:all 0.15s"
+        onmouseover="this.style.background='rgba(74,222,128,0.22)';this.style.borderColor='rgba(74,222,128,0.45)';this.style.transform='translateY(-1px)'"
+        onmouseout="this.style.background='rgba(74,222,128,0.12)';this.style.borderColor='rgba(74,222,128,0.28)';this.style.transform=''">
+        <i class="ti ti-receipt" style="font-size:14px"></i> Gerar Recibos (PDF)
+      </a>
+      <span style="font-size:11px;color:#4a6580">Reservas sem valor configurado não entram no PDF. Condomínios com recibo "morador paga ao fiscal" nem aparecem aqui — saem junto do termo.</span>
+    </div>
+
+    {% else %}
+    <div class="empty-state" style="border-radius:0;border:none">
+      <i class="ti ti-receipt-off"></i>
+      Nenhuma reserva com zelador solicitado neste período.
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

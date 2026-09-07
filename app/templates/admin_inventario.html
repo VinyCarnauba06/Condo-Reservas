@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Inventário — {{ salao.nome }}{% endblock %}
+{% block page_title %}Inventário · {{ salao.nome }}{% endblock %}
+
+{% block content %}
+<style>
+</style>
+
+<div style="max-width:680px">
+
+  <!-- Back link -->
+  <div style="margin-bottom:22px">
+    <a href="{{ url_for('condominios.ver_condominio', id=salao.condominio_id) }}"
+      style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none;transition:opacity 0.15s"
+      onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+      <i class="ti ti-arrow-left" style="font-size:14px"></i>
+      Voltar para {{ salao.condominio.nome }}
+    </a>
+  </div>
+
+  <!-- Header card -->
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:26px 28px;margin-bottom:16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(46,95,138,0.07)"></div>
+    <div style="position:absolute;bottom:-20px;left:60px;width:80px;height:80px;border-radius:50%;background:rgba(59,130,246,0.05)"></div>
+    <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(59,130,246,0.35);display:flex;align-items:center;justify-content:center">
+            <i class="ti ti-clipboard-list" style="font-size:18px;color:#60a5fa"></i>
+          </div>
+          <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:#ebebeb;margin:0;line-height:1.1">Inventário</h2>
+        </div>
+        <p style="font-size:12px;color:#909090;margin:0">
+          <span style="color:#ebebeb;font-weight:600">{{ salao.nome }}</span>
+          <span style="color:#4a6580;margin:0 6px">·</span>
+          {{ salao.condominio.nome }}
+        </p>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:5px 14px;border-radius:100px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(59,130,246,0.35);color:#60a5fa;white-space:nowrap;flex-shrink:0">
+        {{ itens|length }} item(ns)
+      </span>
+    </div>
+  </div>
+
+  <!-- Problemas em aberto -->
+  {% if problemas %}
+  <div style="background:#111e30;border:0.5px solid rgba(239,68,68,0.25);border-radius:18px;padding:18px 22px;margin-bottom:16px">
+    <p style="font-size:11px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 12px">
+      <i class="ti ti-alert-triangle"></i> Problemas em aberto ({{ problemas|length }})
+    </p>
+    {% for p in problemas %}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+      <div>
+        <p style="font-size:13px;color:#ebebeb;margin:0;font-weight:600">{{ p.descricao_item }}</p>
+        <p style="font-size:12px;color:#909090;margin:2px 0 0">{{ p.observacao }}</p>
+        <p style="font-size:10.5px;color:#4a6580;margin:4px 0 0">
+          Registrado em {{ p.registrado_em.strftime('%d/%m/%Y') if p.registrado_em else '—' }}
+          {{ '· foto já registrada' if p.verificado else '· sem foto ainda' }}
+        </p>
+      </div>
+      <form method="POST" action="{{ url_for('relatorios.resolver_problema', salao_id=salao.id, problema_id=p.id) }}" style="flex-shrink:0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit"
+          style="font-size:11px;font-weight:600;padding:7px 14px;border-radius:9px;background:rgba(34,197,94,0.12);border:0.5px solid rgba(34,197,94,0.3);color:#4ade80;cursor:pointer;white-space:nowrap">
+          Resolver
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Lista de itens (salvar) -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-bottom:20px">
+    <form id="form-inventario" method="POST" action="{{ url_for('relatorios.admin_inventario', salao_id=salao.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="acao" value="salvar_itens">
+
+      <div style="padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+        <p style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin:0">
+          Itens do salão
+        </p>
+        <button type="button" onclick="addItem()"
+          style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:10px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);color:#60a5fa;cursor:pointer;transition:background 0.15s"
+          onmouseover="this.style.background='rgba(46,95,138,0.22)'" onmouseout="this.style.background='rgba(59,130,246,0.12)'">
+          <i class="ti ti-plus" style="font-size:12px"></i> Adicionar item
+        </button>
+      </div>
+
+      <div id="itens" style="display:flex;flex-direction:column">
+        {% if itens %}
+          {% for item in itens %}
+          <div class="inv-row"
+            style="display:flex;align-items:center;gap:10px;padding:10px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);transition:background 0.12s"
+            onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            <div style="width:26px;height:26px;border-radius:8px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(46,95,138,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#60a5fa;flex-shrink:0">
+              {{ loop.index }}
+            </div>
+            <input type="text" name="item" value="{{ item.descricao }}"
+              style="flex:1;padding:8px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <button type="button" onclick="removeItem(this)"
+              style="background:transparent;border:none;cursor:pointer;color:#404040;font-size:16px;padding:5px;transition:color 0.15s;line-height:1;flex-shrink:0;border-radius:8px"
+              onmouseover="this.style.color='#d07070'" onmouseout="this.style.color='#404040'">
+              <i class="ti ti-x"></i>
+            </button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div id="empty" style="padding:48px 24px;text-align:center">
+            <i class="ti ti-clipboard-list" style="font-size:36px;color:#282828;display:block;margin-bottom:12px"></i>
+            <p style="font-size:13px;color:#4a6580;margin:0">Nenhum item cadastrado. Clique em "+ Adicionar item" para começar.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div style="padding:16px 22px;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;gap:10px;align-items:center">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:10px 22px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;display:inline-flex;align-items:center;gap:6px"
+          onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+          <i class="ti ti-device-floppy" style="font-size:14px"></i> Salvar inventário
+        </button>
+        <a href="{{ url_for('condominios.ver_condominio', id=salao.condominio_id) }}"
+          style="font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;border:0.5px solid rgba(255,255,255,0.08);color:#909090;text-decoration:none;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='#ebebeb'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090'">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+let contador = {{ itens|length }};
+
+function addItem() {
+  const empty = document.getElementById('empty');
+  if (empty) empty.remove();
+  contador++;
+  const div = document.createElement('div');
+  div.className = 'inv-row';
+  div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);transition:background 0.12s';
+  div.onmouseover = function() { this.style.background = 'rgba(255,255,255,0.02)'; };
+  div.onmouseout = function() { this.style.background = 'transparent'; };
+  div.innerHTML = `
+    <div style="width:26px;height:26px;border-radius:8px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(46,95,138,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#60a5fa;flex-shrink:0">${contador}</div>
+    <input type="text" name="item" placeholder="Descrição do item"
+      style="flex:1;padding:8px 12px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s"
+      onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+    <button type="button" onclick="removeItem(this)"
+      style="background:transparent;border:none;cursor:pointer;color:#404040;font-size:16px;padding:5px;transition:color 0.15s;line-height:1;flex-shrink:0;border-radius:8px"
+      onmouseover="this.style.color='#d07070'" onmouseout="this.style.color='#404040'">
+      <i class="ti ti-x"></i>
+    </button>`;
+  document.getElementById('itens').appendChild(div);
+  div.querySelector('input').focus();
+}
+
+function removeItem(btn) {
+  btn.closest('.inv-row').remove();
+  atualizarNumeracao();
+  const itens = document.getElementById('itens');
+  if (!itens.querySelector('.inv-row')) {
+    const empty = document.createElement('div');
+    empty.id = 'empty';
+    empty.style.cssText = 'padding:48px 24px;text-align:center';
+    empty.innerHTML = '<i class="ti ti-clipboard-list" style="font-size:36px;color:#282828;display:block;margin-bottom:12px"></i><p style="font-size:13px;color:#4a6580;margin:0">Nenhum item cadastrado. Clique em "+ Adicionar item" para começar.</p>';
+    itens.appendChild(empty);
+  }
+}
+
+function atualizarNumeracao() {
+  document.querySelectorAll('#itens .inv-row').forEach((row, i) => {
+    const num = row.querySelector('div');
+    if (num) num.textContent = i + 1;
+  });
+  contador = document.querySelectorAll('#itens .inv-row').length;
+}
+
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+﻿{% extends 'base.html' %}
+{% block title %}Admin · Audit Log — CondoReservas{% endblock %}
+{% block page_title %}Admin · Audit Log{% endblock %}
+
+{% block content %}
+
+{# ── Navegação admin ─────────────────────────────────────── #}
+<div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',   'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes',  'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios',  'ban',             'Bloqueios'),
+    ('relatorios.admin_historico',  'list-details',    'Histórico'),
+    ('relatorios.admin_creditos',   'credit-card',     'Créditos'),
+    ('relatorios.admin_audit_log',  'shield-lock',     'Audit Log'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s;
+    {% if label == 'Audit Log' %}background:rgba(59,130,246,0.18);border:0.5px solid rgba(59,130,246,0.35);color:#60a5fa
+    {% else %}background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);color:#4a6580{% endif %}"
+    {% if label != 'Audit Log' %}
+      onmouseover="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='#909090'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#4a6580'"
+    {% endif %}>
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Filtros ─────────────────────────────────────────────── #}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:16px 20px;margin-bottom:16px">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <label style="font-size:11px;color:#4a6580;font-weight:600">AÇÃO</label>
+      <select name="acao"
+        style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#e0e0e0;font-size:12px;padding:6px 10px;min-width:160px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+        onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+        <option value="">Todas as ações</option>
+        {% for a in acoes %}
+        <option value="{{ a }}" {% if a == acao_filtro %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <label style="font-size:11px;color:#4a6580;font-weight:600">DATA INÍCIO</label>
+      <input type="date" name="data_inicio" value="{{ data_inicio_s }}"
+        style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#e0e0e0;font-size:12px;padding:6px 10px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+        onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <label style="font-size:11px;color:#4a6580;font-weight:600">DATA FIM</label>
+      <input type="date" name="data_fim" value="{{ data_fim_s }}"
+        style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#e0e0e0;font-size:12px;padding:6px 10px;outline:none;transition:border-color 0.15s,box-shadow 0.15s"
+        onfocus="this.style.borderColor='#2563EB';this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.12)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.boxShadow='none'">
+    </div>
+    <button type="submit"
+      style="padding:7px 16px;background:rgba(59,130,246,0.25);border:0.5px solid rgba(46,95,138,0.5);border-radius:8px;color:#60a5fa;font-size:12px;font-weight:600;cursor:pointer">
+      <i class="ti ti-filter" style="font-size:12px"></i> Filtrar
+    </button>
+    <a href="{{ url_for('relatorios.admin_audit_log') }}"
+      style="padding:7px 16px;background:transparent;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#909090;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s"
+      onmouseover="this.style.borderColor='rgba(255,255,255,0.14)';this.style.color='#ebebeb'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090'">
+      Limpar
+    </a>
+    <a href="{{ request.url }}&csv=1" target="_blank"
+      style="padding:7px 16px;background:rgba(15,110,86,0.15);border:0.5px solid rgba(15,110,86,0.3);border-radius:8px;color:#4ac090;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto">
+      <i class="ti ti-download" style="font-size:12px"></i> Exportar CSV
+    </a>
+  </form>
+</div>
+
+{# ── Tabela ──────────────────────────────────────────────── #}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+  <div style="padding:16px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-shield-lock" style="font-size:15px;color:#60a5fa"></i>
+      Audit Log · Rastreabilidade LGPD
+    </h3>
+    <span style="font-size:11px;color:#4a6580">
+      {{ pagination.total }} registro(s) · página {{ pagination.page }}/{{ pagination.pages or 1 }}
+    </span>
+  </div>
+
+  {% if entries %}
+  <div style="overflow-x:auto">
+    <table class="dark-table" style="table-layout:auto">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th>Usuário</th>
+          <th>Ação</th>
+          <th>Tabela</th>
+          <th>ID</th>
+          <th>Data/Hora</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        {# ── linha principal ── #}
+        <tr style="cursor:pointer" onclick="toggleDetail({{ e.id }})">
+          <td style="text-align:center;color:#4a6580;font-size:11px">
+            <span id="arrow-{{ e.id }}">▶</span>
+          </td>
+          <td style="font-weight:700;color:#60a5fa;white-space:nowrap">
+            {{ e.usuario.nome if e.usuario else '—' }}
+          </td>
+          <td>
+            {% set acao = e.acao %}
+            {% if 'criar' in acao or 'sucesso' in acao or 'upload' in acao %}
+              <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(15,110,86,0.18);color:#4ac090;border:0.5px solid rgba(15,110,86,0.3)">
+                <i class="ti ti-circle-plus" style="font-size:11px"></i> {{ acao }}
+              </span>
+            {% elif 'editar' in acao %}
+              <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(24,95,165,0.18);color:#60a5fa;border:0.5px solid rgba(24,95,165,0.3)">
+                <i class="ti ti-edit" style="font-size:11px"></i> {{ acao }}
+              </span>
+            {% elif 'cancelar' in acao or 'deletar' in acao %}
+              <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(133,79,11,0.18);color:#d4a040;border:0.5px solid rgba(133,79,11,0.3)">
+                <i class="ti ti-x" style="font-size:11px"></i> {{ acao }}
+              </span>
+            {% elif 'falhou' in acao %}
+              <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(121,31,31,0.25);color:#d07070;border:0.5px solid rgba(121,31,31,0.4)">
+                <i class="ti ti-alert-triangle" style="font-size:11px"></i> {{ acao }}
+              </span>
+            {% else %}
+              <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(255,255,255,0.04);color:#909090;border:0.5px solid rgba(255,255,255,0.08)">
+                {{ acao }}
+              </span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:#909090;font-family:monospace">{{ e.tabela or '—' }}</td>
+          <td style="font-size:12px;color:#4a6580;font-family:monospace;text-align:center">{{ e.registro_id or '—' }}</td>
+          <td style="font-size:11px;color:#4a6580;white-space:nowrap;font-family:monospace">
+            {{ e.criado_em.strftime('%d/%m/%Y %H:%M') }}
+          </td>
+          <td style="font-size:11px;color:#4a6580;font-family:monospace;white-space:nowrap">{{ e.ip_address or '—' }}</td>
+        </tr>
+        {# ── detalhe expandível ── #}
+        <tr id="detail-{{ e.id }}" style="display:none">
+          <td colspan="7" style="padding:0">
+            <div style="background:#111e30;border-top:0.5px solid rgba(255,255,255,0.05);border-bottom:0.5px solid rgba(255,255,255,0.05);padding:16px 24px;display:flex;gap:20px">
+              <div style="flex:1;min-width:0">
+                <p style="font-size:11px;font-weight:700;color:#4a6580;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px">
+                  <i class="ti ti-arrow-back-up" style="font-size:11px;color:#4a6580"></i> Antes
+                </p>
+                <pre style="margin:0;font-size:11px;font-family:monospace;color:#909090;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word">{% if e._antes_fmt %}{{ e._antes_fmt }}{% else %}null{% endif %}</pre>
+              </div>
+              <div style="flex:1;min-width:0">
+                <p style="font-size:11px;font-weight:700;color:#4a6580;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px">
+                  <i class="ti ti-arrow-forward-up" style="font-size:11px;color:#60a5fa"></i> Depois
+                </p>
+                <pre style="margin:0;font-size:11px;font-family:monospace;color:#e0e0e0;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word">{% if e._depois_fmt %}{{ e._depois_fmt }}{% else %}null{% endif %}</pre>
+              </div>
+              {% if e.user_agent %}
+              <div style="max-width:200px;flex-shrink:0">
+                <p style="font-size:11px;font-weight:700;color:#4a6580;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px">User-Agent</p>
+                <p style="font-size:10px;color:#4a6580;word-break:break-all;margin:0">{{ e.user_agent }}</p>
+              </div>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Paginação ── #}
+  {% if pagination.pages > 1 %}
+  <div style="padding:14px 20px;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;gap:8px;justify-content:center;align-items:center">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('relatorios.admin_audit_log', page=pagination.prev_num, acao=acao_filtro, data_inicio=data_inicio_s, data_fim=data_fim_s) }}"
+      style="padding:6px 14px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#909090;font-size:12px;text-decoration:none;transition:border-color 0.15s"
+      onmouseover="this.style.borderColor='rgba(255,255,255,0.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+      ← Anterior
+    </a>
+    {% endif %}
+    <span style="font-size:12px;color:#4a6580">{{ pagination.page }} / {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+    <a href="{{ url_for('relatorios.admin_audit_log', page=pagination.next_num, acao=acao_filtro, data_inicio=data_inicio_s, data_fim=data_fim_s) }}"
+      style="padding:6px 14px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#909090;font-size:12px;text-decoration:none;transition:border-color 0.15s"
+      onmouseover="this.style.borderColor='rgba(255,255,255,0.12)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+      Próxima →
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state" style="border-radius:0;border:none">
+    <i class="ti ti-shield-lock empty-icon"></i>
+    <p style="font-weight:600;font-size:14px;color:#909090">Nenhum registro de auditoria encontrado</p>
+    <p style="font-size:12px;color:#4a6580">Os eventos serão registrados automaticamente conforme o sistema é utilizado.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleDetail(id) {
+  const row   = document.getElementById('detail-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const open  = row.style.display !== 'none';
+  row.style.display  = open ? 'none' : 'table-row';
+  arrow.textContent  = open ? '▶' : '▼';
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1a3a9e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+
+  <!-- Building roof (triangle) -->
+  <polygon points="5,14 16,5 27,14" fill="white" opacity="0.95"/>
+
+  <!-- Building body -->
+  <rect x="7" y="13" width="18" height="14" fill="white" opacity="0.95"/>
+
+  <!-- Left window -->
+  <rect x="9"  y="16" width="4.5" height="4" rx="0.8" fill="#2563EB"/>
+
+  <!-- Right window -->
+  <rect x="18.5" y="16" width="4.5" height="4" rx="0.8" fill="#2563EB"/>
+
+  <!-- Door -->
+  <rect x="14" y="20" width="4" height="7" rx="1" fill="#1d4ed8"/>
+</svg>

@@ -1,0 +1,169 @@
+﻿{% extends 'base.html' %}
+{% block title %}Admin · Créditos — CondoReservas{% endblock %}
+{% block page_title %}Admin{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;gap:6px;margin-bottom:28px;flex-wrap:wrap">
+  {% for url_name, icon, label in [
+    ('relatorios.admin_feriados',  'calendar-event', 'Feriados'),
+    ('relatorios.admin_pendentes', 'clock',           'Pendentes'),
+    ('relatorios.admin_bloqueios', 'ban',              'Bloqueios'),
+    ('relatorios.admin_historico', 'list-details',     'Histórico'),
+    ('relatorios.admin_creditos',  'credit-card',      'Créditos'),
+  ] %}
+  <a href="{{ url_for(url_name) }}"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s;
+    {% if label == 'Créditos' %}background:rgba(59,130,246,0.18);border:0.5px solid rgba(59,130,246,0.35);color:#60a5fa
+    {% else %}background:transparent;border:0.5px solid rgba(255,255,255,0.08);color:#4a6580{% endif %}"
+    {% if label != 'Créditos' %}
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='#909090'"
+    onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#4a6580'"
+    {% endif %}>
+    <i class="ti ti-{{ icon }}" style="font-size:13px"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+  <!-- Lista créditos -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+        <i class="ti ti-credit-card" style="font-size:15px;color:#4ac090"></i>
+        Créditos Disponíveis
+      </h3>
+      <span style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.07);color:#4a6580;font-size:11px;padding:3px 12px;border-radius:100px">
+        {{ creditos|length }} créditos
+      </span>
+    </div>
+
+    {% if creditos %}
+    <div>
+      {% for c in creditos %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);gap:12px;transition:background 0.15s"
+        onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:700;color:#ebebeb">Apto {{ c.apartamento }}</span>
+            <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);color:#60a5fa">
+              {{ c.condominio.nome }}
+            </span>
+            <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.07);color:#4a6580">
+              {{ c.salao.nome }}
+            </span>
+          </div>
+          <span style="font-size:14px;font-weight:700;color:#4ac090">R$ {{ '%.2f'|format(c.valor) }}</span>
+          {% if c.observacao %}
+          <span style="font-size:11px;color:#4a6580;margin-top:1px">{{ c.observacao }}</span>
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('relatorios.excluir_credito', id=c.id) }}"
+          onsubmit="return confirm('Remover este crédito?')" style="margin:0;flex-shrink:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+            style="background:transparent;border:none;cursor:pointer;color:#404040;font-size:16px;padding:6px;transition:color 0.15s;line-height:1;border-radius:8px"
+            onmouseover="this.style.color='#d07070'" onmouseout="this.style.color='#404040'">
+            <i class="ti ti-trash"></i>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="border-radius:0;border:none;padding:48px 24px">
+      <i class="ti ti-credit-card empty-icon"></i>
+      <p>Nenhum crédito disponível</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Form adicionar crédito -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <div style="background:linear-gradient(135deg,#0f1f30,#071525);padding:18px 22px;border-bottom:0.5px solid rgba(46,95,138,0.2)">
+      <h3 style="font-size:15px;font-family:'DM Serif Display',serif;color:#ebebeb;margin:0;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-credit-card" style="font-size:16px;color:#60a5fa"></i>
+        Adicionar Crédito
+      </h3>
+    </div>
+
+    <div style="padding:22px">
+      <form method="POST" style="display:flex;flex-direction:column;gap:16px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Condomínio</label>
+          <select name="condominio_id" required onchange="carregarSaloes(this.value)"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <option value="">Selecione...</option>
+            {% for c in condominios %}
+            <option value="{{ c.id }}">{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Salão</label>
+          <select name="salao_id" required id="select-salao"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;cursor:pointer;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <option value="">Selecione o condomínio primeiro</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Apartamento</label>
+          <input type="text" name="apartamento" required placeholder="Ex: 302"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Valor (R$)</label>
+          <input type="number" step="0.01" name="valor" required placeholder="Ex: 350.00"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:7px;display:block">Observação <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input type="text" name="observacao" maxlength="200" placeholder="Ex: Cancelamento reserva 15/05/2026"
+            style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;padding:10px 14px;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <div>
+          <button type="submit"
+            style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:10px 22px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;display:inline-flex;align-items:center;gap:6px"
+            onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+            <i class="ti ti-plus" style="font-size:14px"></i> Adicionar Crédito
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const saloesPorCond = {};
+{% for c in condominios %}
+saloesPorCond["{{ c.id }}"] = [{% for s in c.saloes %}{ id: "{{ s.id }}", nome: "{{ s.nome }}" }{% if not loop.last %},{% endif %}{% endfor %}];
+{% endfor %}
+function carregarSaloes(condId) {
+  const sel = document.getElementById('select-salao');
+  sel.innerHTML = '<option value="">Selecione...</option>';
+  if (!condId) return;
+  (saloesPorCond[condId] || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = s.nome;
+    sel.appendChild(opt);
+  });
+}
+</script>
+
+{% endblock %}

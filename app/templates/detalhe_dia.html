@@ -1,0 +1,254 @@
+﻿{% extends 'base.html' %}
+{% block title %}{{ data_festa.strftime('%d/%m/%Y') }} — {{ condominio.nome }}{% endblock %}
+{% block page_title %}{{ condominio.nome }} · {{ data_festa.strftime('%d/%m/%Y') }}{% endblock %}
+
+{% block content %}
+{% set dias_semana = ['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'] %}
+
+<!-- Nav top -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <a href="{{ url_for('condominios.ver_condominio', id=condominio.id, mes=data_festa.month, ano=data_festa.year) }}"
+    style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#60a5fa;text-decoration:none"
+    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+    <i class="ti ti-arrow-left" style="font-size:14px"></i>
+    Voltar ao calendário
+  </a>
+  <div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(59,130,246,0.35);border-radius:12px;padding:8px 18px;font-size:13px;font-weight:700;color:#60a5fa">
+    {{ data_festa.strftime('%d/%m/%Y') }} &middot; {{ dias_semana[data_festa.weekday()] }}
+  </div>
+</div>
+
+<!-- Reservas do dia -->
+{% if reservas_dia %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:20px">
+  {% for r in reservas_dia %}
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+    <!-- Card header -->
+    <div style="padding:20px 22px;position:relative;overflow:hidden;
+      {% if r.status == 'cancelado' %}background:linear-gradient(135deg,rgba(121,31,31,0.5),rgba(90,20,20,0.4))
+      {% elif r.zelador %}background:linear-gradient(135deg,rgba(20,90,60,0.5),rgba(15,70,50,0.4))
+      {% elif r.surpresa %}background:linear-gradient(135deg,rgba(100,50,180,0.4),rgba(70,30,140,0.4))
+      {% elif r.status == 'pendente' %}background:linear-gradient(135deg,rgba(133,79,11,0.5),rgba(100,60,10,0.4))
+      {% else %}background:linear-gradient(135deg,rgba(30,58,95,0.6),rgba(46,95,138,0.3)){% endif %}">
+      <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>
+      <div style="position:relative">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div>
+            <h3 style="font-family:'DM Serif Display',serif;font-size:18px;color:#ebebeb;margin:0 0 4px">{{ r.salao.nome }}</h3>
+            {% if r.horario %}<p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0">{{ r.horario }}</p>{% endif %}
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:4px 11px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+            {% if r.status == 'cancelado' %}background:rgba(239,68,68,0.12);color:#f87171;border:0.5px solid rgba(239,68,68,0.22)
+            {% elif r.surpresa %}background:rgba(139,92,246,0.12);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.22)
+            {% elif r.zelador %}background:rgba(40,180,120,0.1);color:#4ac090;border:0.5px solid rgba(40,180,120,0.2)
+            {% elif r.status == 'pendente' %}background:rgba(220,120,40,0.12);color:#e07840;border:0.5px solid rgba(220,120,40,0.22)
+            {% else %}background:rgba(16,185,129,0.1);color:#34D399;border:0.5px solid rgba(16,185,129,0.22){% endif %}">
+            {% if r.status == 'cancelado' %}<i class="ti ti-x"></i> Cancelado
+            {% elif r.surpresa %}<i class="ti ti-confetti"></i> Surpresa
+            {% elif r.zelador %}<i class="ti ti-brush"></i> Zelador
+            {% elif r.status == 'pendente' %}<i class="ti ti-clock"></i> Pendente
+            {% else %}<i class="ti ti-check"></i> Confirmado{% endif %}
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+          <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
+            {% if r.festa_condominio %}background:rgba(139,92,246,0.15);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.28)
+            {% elif r.status == 'cancelado' %}background:rgba(239,68,68,0.1);color:#f87171;border:0.5px solid rgba(239,68,68,0.18)
+            {% elif r.zelador %}background:rgba(40,180,120,0.12);color:#4ac090;border:0.5px solid rgba(40,180,120,0.22)
+            {% elif r.surpresa %}background:rgba(139,92,246,0.12);color:#a78bfa;border:0.5px solid rgba(139,92,246,0.22)
+            {% elif r.status == 'pendente' %}background:rgba(220,120,40,0.12);color:#e07840;border:0.5px solid rgba(220,120,40,0.22)
+            {% else %}background:rgba(59,130,246,0.12);color:#60a5fa;border:0.5px solid rgba(59,130,246,0.2){% endif %}">
+            {% if r.festa_condominio %}CD{% elif r.zelador %}ZL{% elif r.nome_solicitante %}{{ r.nome_solicitante[0].upper() }}{% else %}?{% endif %}
+          </div>
+          <div>
+            <p style="font-size:13px;font-weight:600;color:#ebebeb;margin:0">{% if r.festa_condominio %}Festa do Condomínio{% else %}{{ r.nome_solicitante or '—' }}{% endif %}</p>
+            {% if not r.festa_condominio %}<p style="font-size:11px;color:rgba(255,255,255,0.35);margin:0">Apto {{ r.apartamento }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card body -->
+    <div style="padding:16px 22px">
+      {% macro row(icon, key, val) %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);gap:8px">
+        <span style="font-size:11px;color:#4a6580;display:flex;align-items:center;gap:6px">
+          <i class="ti ti-{{ icon }}" style="font-size:12px"></i> {{ key }}
+        </span>
+        <span style="font-size:12px;font-weight:600;color:#909090;text-align:right;max-width:60%">{{ val }}</span>
+      </div>
+      {% endmacro %}
+      {{ row('phone', 'Contato', r.contato or '—') }}
+      {{ row('eye', 'Vistoria', ('Dia anterior (' ~ r.data_vistoria.strftime('%d/%m/%Y') ~ ')') if r.vistoria and r.data_vistoria else ('No dia da festa' if not r.vistoria else 'Dia anterior')) }}
+      {% if r.registro_anual and r.registro_anual.valor_opcional_usado and r.salao.regra_precificacao and r.salao.regra_precificacao.valor_opcional %}
+      {{ row('credit-card', 'Pagamento', 'ISENTO (taxa) · R$ ' ~ '%.2f'|format(r.salao.regra_precificacao.valor_opcional)) }}
+      {% elif r.registro_anual %}
+      {{ row('credit-card', 'Pagamento', 'ISENTO · R$ 0,00') }}
+      {% else %}
+      {{ row('credit-card', 'Pagamento', r.salao.forma_pagamento ~ ' · R$ ' ~ '%.2f'|format(r.salao.valor)) }}
+      {% endif %}
+      {{ row('user', 'Registrado por', (r.registrado_por or '—') ~ ' · ' ~ r.criado_em.strftime('%d/%m/%Y')) }}
+      {% if r.cancelado_em %}
+      {{ row('x', 'Cancelado em', r.cancelado_em.strftime('%d/%m/%Y') ~ ' por ' ~ (r.cancelado_por or '—')) }}
+      {% endif %}
+      {% if r.observacoes %}{{ row('notes', 'Observações', r.observacoes) }}{% endif %}
+
+      <!-- Histórico -->
+      {% if r.historico %}
+      <div style="border:0.5px solid rgba(255,255,255,0.04);border-radius:12px;padding:12px 14px;margin-top:12px">
+        <h4 style="font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px">Histórico</h4>
+        {% for h in r.historico %}
+        <div style="display:flex;gap:8px;position:relative;{% if not loop.last %}margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid rgba(255,255,255,0.03){% endif %}">
+          <div style="width:20px;height:20px;border-radius:50%;background:#111e30;border:0.5px solid {% if h.usuario and h.usuario != 'Sistema' %}rgba(59,130,246,0.3){% else %}rgba(255,255,255,0.08){% endif %};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+            <i class="ti {% if h.usuario and h.usuario != 'Sistema' %}ti-user{% else %}ti-settings{% endif %}" style="font-size:9px;color:{% if h.usuario and h.usuario != 'Sistema' %}#60a5fa{% else %}#4a6580{% endif %}"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:11px;font-weight:600;color:{% if h.usuario and h.usuario != 'Sistema' %}#60a5fa{% else %}#4a6580{% endif %}">{{ h.usuario or 'Sistema' }}</span>
+              <span style="font-size:10px;color:#3D5A7A">{{ h.criado_em.strftime('%d/%m/%Y') }}</span>
+            </div>
+            <div style="font-size:11px;color:#4a6580;margin-top:2px;line-height:1.4">{{ h.descricao }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Ações -->
+      {% if r.status != 'cancelado' and session.get('usuario_perfil') != 'fiscal' %}
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <a href="{{ url_for('reservas.editar_reserva', id=r.id) }}"
+          style="flex:1;text-align:center;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:10px;text-decoration:none;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);transition:transform cubic-bezier(0.4,0,0.2,1) 0.2s,box-shadow cubic-bezier(0.4,0,0.2,1) 0.2s"
+          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+          onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+          <i class="ti ti-edit" style="font-size:12px;margin-right:4px"></i>Editar
+        </a>
+        <button onclick="toggleCancelForm('{{ r.id }}')"
+          style="flex:1;background:rgba(121,31,31,0.1);border:0.5px solid rgba(121,31,31,0.25);color:#d07070;font-size:12px;font-weight:600;padding:8px 12px;border-radius:10px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+          onmouseover="this.style.background='rgba(121,31,31,0.2)'" onmouseout="this.style.background='rgba(121,31,31,0.1)'">
+          <i class="ti ti-x" style="font-size:12px;margin-right:4px"></i>Cancelar
+        </button>
+      </div>
+      <div id="cancel-form-{{ r.id }}" style="display:none;margin-top:10px">
+        <div style="background:rgba(121,31,31,0.1);border:0.5px solid rgba(121,31,31,0.25);border-radius:12px;padding:14px">
+          <p style="font-size:12px;font-weight:600;color:#d07070;margin:0 0 10px">Confirmar cancelamento da reserva?</p>
+          <form method="POST" action="{{ url_for('reservas.cancelar_reserva', id=r.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="observacao_cancelamento" maxlength="500" placeholder="Observação (opcional)"
+              style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.2);border:0.5px solid rgba(255,255,255,0.08);color:#d0d0d0;font-size:12px;padding:8px;border-radius:8px;resize:vertical;min-height:50px;margin-bottom:8px;font-family:inherit"></textarea>
+            <div style="display:flex;gap:8px">
+              <button type="submit"
+                style="flex:1;background:rgba(180,40,40,0.6);border:none;color:#fff;font-size:12px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;transition:background cubic-bezier(0.4,0,0.2,1) 0.2s"
+                onmouseover="this.style.background='rgba(180,40,40,0.8)'" onmouseout="this.style.background='rgba(180,40,40,0.6)'">
+                Sim, cancelar
+              </button>
+              <button type="button" onclick="toggleCancelForm('{{ r.id }}')"
+                style="flex:1;background:transparent;border:0.5px solid rgba(255,255,255,0.08);color:#909090;font-size:12px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+                onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+                Voltar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Nova reserva -->
+{% if session.get('usuario_perfil') != 'fiscal' %}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+  <div style="padding:16px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;margin:0;display:flex;align-items:center;gap:8px">
+      <i class="ti ti-calendar-plus" style="font-size:15px;color:#60a5fa"></i>
+      Fazer nova reserva
+    </h3>
+    <span style="font-size:11px;color:#909090">{{ saloes|length }} salão(ões)</span>
+  </div>
+  <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+    {% for s in saloes %}
+      {% if s.tipo == 'horario_fixo' %}
+        {% set faixas = s.horarios.split(',') if s.horarios else [] %}
+        {% set ocupados = horarios_ocupados.get(s.id, []) %}
+        {% set faixas_livres = faixas|reject('in', ocupados)|list %}
+        {% if faixas_livres %}
+        <a href="{{ url_for('reservas.nova_reserva', salao_id=s.id, data_festa=data_festa.isoformat()) }}"
+          style="display:flex;justify-content:space-between;align-items:center;padding:16px;border:0.5px solid rgba(255,255,255,0.07);border-radius:14px;text-decoration:none;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+          onmouseover="this.style.borderColor='var(--c-primary)';this.style.background='rgba(59,130,246,0.05)'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.background='transparent'">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#ebebeb;margin-bottom:4px">{{ s.nome }}</div>
+            <div style="font-size:11px;color:#909090">R$ {{ '%.2f'|format(s.valor) }} · {{ s.forma_pagamento }}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              {% for f in faixas %}
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;
+                {% if f.strip() in ocupados %}background:rgba(121,31,31,0.15);color:#d07070;border:0.5px solid rgba(121,31,31,0.25)
+                {% else %}background:rgba(15,110,86,0.15);color:#4ac090;border:0.5px solid rgba(15,110,86,0.25){% endif %}">
+                {{ f.strip() }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(15,110,86,0.15);color:#4ac090;border:0.5px solid rgba(15,110,86,0.25);white-space:nowrap">
+            <i class="ti ti-check" style="font-size:10px"></i> {{ faixas_livres|length }} livre(s)
+          </span>
+        </a>
+        {% else %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border:0.5px solid rgba(121,31,31,0.2);border-radius:14px;opacity:0.5">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#ebebeb;margin-bottom:4px">{{ s.nome }}</div>
+            <div style="font-size:11px;color:#909090">R$ {{ '%.2f'|format(s.valor) }} · {{ s.forma_pagamento }}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              {% for f in faixas %}
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(121,31,31,0.15);color:#d07070;border:0.5px solid rgba(121,31,31,0.25)">{{ f.strip() }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(121,31,31,0.15);color:#d07070;border:0.5px solid rgba(121,31,31,0.25)">
+            <i class="ti ti-x" style="font-size:10px"></i> Todas ocupadas
+          </span>
+        </div>
+        {% endif %}
+      {% else %}
+        {% if s.id not in saloes_ocupados %}
+        <a href="{{ url_for('reservas.nova_reserva', salao_id=s.id, data_festa=data_festa.isoformat()) }}"
+          style="display:flex;justify-content:space-between;align-items:center;padding:16px;border:0.5px solid rgba(255,255,255,0.07);border-radius:14px;text-decoration:none;transition:all cubic-bezier(0.4,0,0.2,1) 0.2s"
+          onmouseover="this.style.borderColor='var(--c-primary)';this.style.background='rgba(59,130,246,0.05)'"
+          onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.background='transparent'">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#ebebeb;margin-bottom:4px">{{ s.nome }}</div>
+            <div style="font-size:11px;color:#909090">R$ {{ '%.2f'|format(s.valor) }} · {{ s.forma_pagamento }} · Dia inteiro</div>
+          </div>
+          <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(15,110,86,0.15);color:#4ac090;border:0.5px solid rgba(15,110,86,0.25)">
+            <i class="ti ti-circle-filled" style="font-size:8px"></i> Disponível
+          </span>
+        </a>
+        {% else %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border:0.5px solid rgba(121,31,31,0.2);border-radius:14px;opacity:0.5">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#ebebeb;margin-bottom:4px">{{ s.nome }}</div>
+            <div style="font-size:11px;color:#909090">R$ {{ '%.2f'|format(s.valor) }} · {{ s.forma_pagamento }} · Dia inteiro</div>
+          </div>
+          <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(121,31,31,0.15);color:#d07070;border:0.5px solid rgba(121,31,31,0.25)">
+            <i class="ti ti-x" style="font-size:10px"></i> Ocupado
+          </span>
+        </div>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+function toggleCancelForm(id) {
+  var f = document.getElementById('cancel-form-' + id);
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
+{% endblock %}

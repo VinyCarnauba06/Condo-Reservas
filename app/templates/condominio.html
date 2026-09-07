@@ -1,0 +1,444 @@
+﻿{% extends 'base.html' %}
+{% block title %}{{ condominio.nome }} — CondoReservas{% endblock %}
+{% block page_title %}{{ condominio.nome }}{% endblock %}
+
+{% block content %}
+
+<!-- ── Voltar ───────────────────────────────────────────── -->
+<div style="margin-bottom:22px">
+  <a href="{{ url_for('condominios.lista_condominios') }}"
+    style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#4a6580;text-decoration:none;transition:color 0.15s;letter-spacing:0.01em"
+    onmouseover="this.style.color='#60a5fa'" onmouseout="this.style.color='#4a6580'">
+    <i class="ti ti-arrow-left" style="font-size:14px"></i> Condomínios
+  </a>
+</div>
+
+<!-- ── Cabeçalho do condomínio ──────────────────────────── -->
+<div style="background:linear-gradient(135deg,#0f1f30,#071525);border:0.5px solid rgba(46,95,138,0.3);border-radius:20px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden">
+  <!-- Decorative circles -->
+  <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%)"></div>
+  <div style="position:absolute;bottom:-40px;left:-40px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(46,95,138,0.07) 0%,transparent 70%)"></div>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(46,95,138,0.04) 0%,transparent 60%);pointer-events:none"></div>
+
+  <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <div style="width:44px;height:44px;border-radius:14px;background:rgba(46,95,138,0.2);border:0.5px solid rgba(46,95,138,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-building" style="font-size:20px;color:#60a5fa"></i>
+        </div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:26px;color:#ebebeb;margin:0;letter-spacing:-0.3px">{{ condominio.nome }}</h2>
+      </div>
+      <p style="font-size:12px;color:#909090;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        {% set ns = condominio.saloes|length %}
+        <span>{% if ns == 0 %}Nenhum salão{% elif ns == 1 %}1 salão{% else %}{{ ns }} salões{% endif %}</span>
+        {% if condominio.exige_adimplencia %}
+        <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(245,158,11,0.15);border:0.5px solid rgba(245,158,11,0.4);color:#fbbf24;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:0.03em">
+          <i class="ti ti-shield-check" style="font-size:12px"></i> EXIGE ADIMPLÊNCIA
+        </span>
+        {% endif %}
+        {% set end = condominio.endereco %}
+        {% if end and end != 'None' %}
+        <span style="color:#4a6580">·</span>
+        <span style="color:#909090">{{ end }}</span>
+        {% endif %}
+      </p>
+      {% if condominio.observacoes %}
+      <div style="margin-top:4px;background:rgba(220,120,40,0.12);border:0.5px solid rgba(220,120,40,0.35);border-left:3px solid #e07840;color:#e8a060;font-size:12px;font-weight:500;padding:12px 16px;border-radius:10px;display:flex;align-items:flex-start;gap:10px;line-height:1.6">
+        <i class="ti ti-alert-triangle" style="font-size:16px;flex-shrink:0;margin-top:1px;color:#e07840"></i>
+        <span>{{ condominio.observacoes }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
+      {% set header_btns = [
+        (url_for('condominios.editar_condominio', id=condominio.id), 'ti-edit', 'Editar', False),
+        (url_for('saloes.novo_salao', condominio_id=condominio.id), 'ti-plus', 'Salão', False),
+        (url_for('relatorios.admin_regras', condominio_id=condominio.id), 'ti-clipboard-list', 'Regras', False),
+        (url_for('relatorios.relatorio_condominio', condominio_id=condominio.id, mes=mes, ano=ano), 'ti-file-analytics', 'Relatório', False),
+      ] %}
+      {% for href, icon, label, _ in header_btns %}
+      <a href="{{ href }}"
+        style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);color:#c0c0c0;font-size:12px;font-weight:600;padding:8px 13px;border-radius:10px;text-decoration:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px;backdrop-filter:blur(4px)"
+        onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'"
+        onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='#c0c0c0'">
+        <i class="ti {{ icon }}" style="font-size:13px"></i> {{ label }}
+      </a>
+      {% endfor %}
+      <button type="button" onclick="abrirModal('modal-regimento')"
+        style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);color:#c0c0c0;font-size:12px;font-weight:600;padding:8px 13px;border-radius:10px;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px;backdrop-filter:blur(4px)"
+        onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#ebebeb'"
+        onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='#c0c0c0'">
+        <i class="ti ti-paperclip" style="font-size:13px"></i> Regimento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Regimento ──────────────────────────────────── -->
+<div id="modal-regimento" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(4px)">
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;width:100%;max-width:400px;margin:16px;box-shadow:0 32px 64px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-paperclip" style="font-size:16px;color:#60a5fa"></i>
+      </div>
+      <h3 style="font-size:15px;font-weight:700;color:#ebebeb;margin:0">Anexar Regimento</h3>
+    </div>
+    <p style="font-size:12px;color:#909090;margin:0 0 18px;line-height:1.6">
+      O PDF será anexado automaticamente ao final dos termos de vistoria.
+      {% if condominio.regimento_pdf %}
+      <span style="color:#4ac090;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:8px">
+        <i class="ti ti-circle-check" style="font-size:13px"></i> Regimento já cadastrado
+      </span>
+      {% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('relatorios.upload_regimento', condominio_id=condominio.id) }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="file" name="regimento" accept=".pdf" required
+        style="width:100%;font-size:12px;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#909090;cursor:pointer;margin-bottom:16px">
+      <div style="display:flex;gap:8px">
+        <button type="submit"
+          style="flex:1;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:11px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)"
+          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">Salvar</button>
+        <button type="button" onclick="fecharModal('modal-regimento')"
+          style="flex:1;background:#152338;color:#909090;font-size:13px;font-weight:600;padding:11px;border-radius:12px;border:0.5px solid rgba(255,255,255,0.07);cursor:pointer;transition:all 0.15s"
+          onmouseover="this.style.background='#1c2e44';this.style.color='#ebebeb'" onmouseout="this.style.background='#152338';this.style.color='#909090'">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Mini stats ───────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px">
+  {% set mini_stats = [
+    ('Reservas/mês', total_mes,                 '#60a5fa', 'ti-calendar-event', 'rgba(59,130,246,0.12)', 'rgba(46,95,138,0.22)'),
+    ('Pendentes',    pendentes_mes|length,       '#e07840', 'ti-clock-hour-4',   'rgba(220,120,40,0.12)','rgba(220,120,40,0.22)'),
+    ('Cancelamentos',lista_cancelados_mes|length,'#d07070', 'ti-ban',            'rgba(200,60,60,0.12)', 'rgba(200,60,60,0.22)'),
+    ('Créditos',     creditos|length,            '#4ac090', 'ti-credit-card',    'rgba(40,180,120,0.12)','rgba(40,180,120,0.22)'),
+  ] %}
+  {% for label, val, cor, icon, bg, border in mini_stats %}
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 20px;transition:border-color 0.15s"
+    onmouseover="this.style.borderColor='rgba(255,255,255,0.13)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <p style="font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin:0">{{ label }}</p>
+      <div style="width:30px;height:30px;border-radius:9px;background:{{ bg }};border:0.5px solid {{ border }};display:flex;align-items:center;justify-content:center">
+        <i class="ti {{ icon }}" style="font-size:15px;color:{{ cor }}"></i>
+      </div>
+    </div>
+    <p style="font-size:26px;font-weight:800;color:{{ cor }};margin:0;letter-spacing:-0.8px;line-height:1">{{ val }}</p>
+  </div>
+  {% endfor %}
+
+  <!-- Seletor de mês -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 20px;position:relative">
+    <p style="font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px">Mês</p>
+    <button onclick="toggleMesPicker()"
+      style="font-size:15px;font-weight:700;color:#ebebeb;background:transparent;border:none;cursor:pointer;padding:0;transition:color 0.15s;display:flex;align-items:center;gap:5px"
+      onmouseover="this.style.color='#60a5fa'" onmouseout="this.style.color='#ebebeb'">
+      {{ ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes-1] }}/{{ ano }}
+      <i class="ti ti-chevron-down" style="font-size:13px;opacity:0.6"></i>
+    </button>
+    <div id="mes-picker" class="hidden" style="position:absolute;top:100%;left:0;margin-top:8px;background:#111e30;border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,0.6);z-index:50;padding:14px;width:228px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:10px">
+        {% for i, m in [(1,'Jan'),(2,'Fev'),(3,'Mar'),(4,'Abr'),(5,'Mai'),(6,'Jun'),(7,'Jul'),(8,'Ago'),(9,'Set'),(10,'Out'),(11,'Nov'),(12,'Dez')] %}
+        <a href="{{ url_for('condominios.ver_condominio', id=condominio.id, mes=i, ano=ano) }}"
+          style="font-size:12px;font-weight:600;text-align:center;padding:7px 4px;border-radius:8px;text-decoration:none;transition:all 0.15s;{% if i == mes %}background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff{% else %}color:#909090{% endif %}"
+          {% if i != mes %}onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.color='#ebebeb'" onmouseout="this.style.background='transparent';this.style.color='#909090'"{% endif %}>
+          {{ m }}
+        </a>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:4px;padding-top:10px;border-top:0.5px solid rgba(255,255,255,0.05)">
+        {% for a in range(2026, 2031) %}
+        <a href="{{ url_for('condominios.ver_condominio', id=condominio.id, mes=mes, ano=a) }}"
+          style="flex:1;font-size:11px;font-weight:600;text-align:center;padding:6px 3px;border-radius:7px;text-decoration:none;transition:all 0.15s;{% if a == ano %}background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff{% else %}color:#909090{% endif %}"
+          {% if a != ano %}onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.color='#ebebeb'" onmouseout="this.style.background='transparent';this.style.color='#909090'"{% endif %}>
+          {{ a }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Busca ─────────────────────────────────────────────── -->
+<div style="margin-bottom:18px">
+  <form method="GET" style="display:flex;gap:10px">
+    <input type="hidden" name="mes" value="{{ mes }}">
+    <input type="hidden" name="ano" value="{{ ano }}">
+    <div style="flex:1;position:relative">
+      <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#4a6580;pointer-events:none"></i>
+      <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar por morador ou apartamento..."
+        style="width:100%;padding:11px 14px 11px 40px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s"
+        onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+    </div>
+    <button type="submit"
+      style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:11px 22px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);white-space:nowrap"
+      onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+      Buscar
+    </button>
+  </form>
+</div>
+
+<!-- ── Resultado da busca ────────────────────────────────── -->
+{% if busca and reservas_busca %}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-bottom:18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+    <h3 style="font-size:13px;font-weight:700;color:#ebebeb;display:flex;align-items:center;gap:7px;margin:0">
+      <i class="ti ti-search" style="font-size:13px;color:#60a5fa"></i>
+      Resultados para "{{ busca }}"
+    </h3>
+    <span style="font-size:11px;color:#4a6580;background:rgba(255,255,255,0.04);padding:3px 10px;border-radius:100px;border:0.5px solid rgba(255,255,255,0.06)">{{ reservas_busca|length }} resultado(s)</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="dark-table">
+      <thead>
+        <tr>
+          <th>Data</th><th>Salão</th><th>Apto</th><th>Solicitante</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservas_busca %}
+        <tr>
+          <td style="font-weight:600;color:#909090;white-space:nowrap">{{ r.data_festa.strftime('%d/%m/%Y') }}</td>
+          <td style="color:#ebebeb">{{ r.salao.nome }}</td>
+          <td style="font-weight:700;color:#ebebeb">{% if r.festa_condominio %}—{% else %}{{ r.apartamento }}{% endif %}</td>
+          <td style="color:#ebebeb">{% if r.festa_condominio %}[Condomínio]{% else %}{{ r.nome_solicitante }}{% endif %}</td>
+          <td>
+            {% if r.status == 'confirmado' %}<span class="badge badge-info"><i class="ti ti-check" style="font-size:10px"></i> Confirmado</span>
+            {% elif r.status == 'pendente' %}<span class="badge badge-warning"><i class="ti ti-clock" style="font-size:10px"></i> Pendente</span>
+            {% else %}<span class="badge badge-danger"><i class="ti ti-x" style="font-size:10px"></i> Cancelado</span>{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('reservas.ver_reserva', id=r.id) }}"
+              style="font-size:12px;font-weight:700;color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.15s"
+              onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
+              Ver <i class="ti ti-arrow-right" style="font-size:11px"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Calendário ────────────────────────────────────────── -->
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden">
+
+  <!-- Nav do mês -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+    <a href="{{ url_for('condominios.ver_condominio', id=condominio.id, mes=mes_anterior.month, ano=mes_anterior.year) }}"
+      style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#909090;font-size:18px;text-decoration:none;transition:all 0.15s"
+      onmouseover="this.style.borderColor='rgba(46,95,138,0.5)';this.style.color='#60a5fa';this.style.background='rgba(59,130,246,0.07)'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090';this.style.background='#152338'">‹</a>
+    <div style="display:flex;align-items:center;gap:14px">
+      <h3 style="font-family:'DM Serif Display',serif;font-size:18px;color:#ebebeb;margin:0;letter-spacing:-0.2px">
+        {{ ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes-1] }} {{ ano }}
+      </h3>
+      <a href="{{ url_for('condominios.ver_condominio', id=condominio.id) }}"
+        style="font-size:10px;font-weight:700;color:#60a5fa;background:rgba(46,95,138,0.1);border:0.5px solid rgba(59,130,246,0.25);padding:4px 11px;border-radius:8px;text-decoration:none;transition:all 0.15s"
+        onmouseover="this.style.background='rgba(46,95,138,0.2)';this.style.borderColor='rgba(46,95,138,0.4)'"
+        onmouseout="this.style.background='rgba(46,95,138,0.1)';this.style.borderColor='rgba(59,130,246,0.25)'">Hoje</a>
+    </div>
+    <a href="{{ url_for('condominios.ver_condominio', id=condominio.id, mes=mes_seguinte.month, ano=mes_seguinte.year) }}"
+      style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#909090;font-size:18px;text-decoration:none;transition:all 0.15s"
+      onmouseover="this.style.borderColor='rgba(46,95,138,0.5)';this.style.color='#60a5fa';this.style.background='rgba(59,130,246,0.07)'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090';this.style.background='#152338'">›</a>
+  </div>
+
+  <!-- Dias da semana -->
+  <div class="cal-grid" style="border-bottom:0.5px solid rgba(255,255,255,0.05)">
+    {% for dia_sem in ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}
+    <div style="text-align:center;padding:9px;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;background:#0a1a2e">{{ dia_sem }}</div>
+    {% endfor %}
+  </div>
+
+  <!-- Células do calendário -->
+  <div class="cal-grid">
+    {% for semana in semana_cal %}
+      {% for dia in semana %}
+        {% if dia == 0 %}
+        <div style="min-height:80px;border-right:0.5px solid rgba(255,255,255,0.08);border-bottom:0.5px solid rgba(255,255,255,0.08);background:rgba(5,12,22,0.45)"></div>
+        {% else %}
+          {% set data_obj = hoje.__class__(ano, mes, dia) %}
+          {% set data_str = '%d-%02d-%02d'|format(ano, mes, dia) %}
+          {% set res_dia = reservas_map.get(data_obj, []) %}
+          {% set tem_reserva = res_dia|selectattr('status', '!=', 'cancelado')|list %}
+          {% set eh_hoje = data_obj == hoje %}
+          {% set bloqueado = bloqueios_dias.get(dia) %}
+          {% set cell_class = 'cal-cell-empty' %}
+          {% if bloqueado %}{% set cell_class = 'cal-cell-blocked' %}{% endif %}
+          {% if data_obj in dias_vistoria %}{% set cell_class = 'cal-cell-vistoria' %}{% endif %}
+          {% if tem_reserva %}
+            {% set r0 = tem_reserva[0] %}
+            {% if r0.zelador %}{% set cell_class = 'cal-cell-zelador' %}
+            {% elif r0.surpresa %}{% set cell_class = 'cal-cell-surpresa' %}
+            {% elif r0.vistoria and r0.data_vistoria and r0.data_vistoria < r0.data_festa %}{% set cell_class = 'cal-cell-vistoria' %}
+            {% elif r0.status == 'confirmado' %}{% set cell_class = 'cal-cell-confirmado' %}
+            {% elif r0.status == 'pendente' %}{% set cell_class = 'cal-cell-pendente' %}
+            {% else %}{% set cell_class = 'cal-cell-cancelado' %}{% endif %}
+          {% endif %}
+        <a href="{{ url_for('reservas.ver_dia', condominio_id=condominio.id, data_festa=data_str) }}"
+          class="{{ cell_class }}"
+          style="min-height:80px;border-right:0.5px solid rgba(255,255,255,0.08);border-bottom:0.5px solid rgba(255,255,255,0.08);padding:8px;display:block;text-decoration:none;transition:filter 0.15s;{% if eh_hoje %}outline:2px solid rgba(46,95,138,0.55);outline-offset:-2px;{% endif %}"
+          onmouseover="this.style.filter='brightness(1.35)'" onmouseout="this.style.filter='brightness(1)'">
+          {% if dia in feriados_dias %}
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#8b2020;color:#fff;font-size:10px;font-weight:800;margin-bottom:4px;box-shadow:0 2px 6px rgba(139,32,32,0.4)">{{ dia }}</div>
+          {% elif eh_hoje %}
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:10px;font-weight:800;margin-bottom:4px;box-shadow:0 2px 8px rgba(46,95,138,0.45)">{{ dia }}</div>
+          {% else %}
+            <div style="font-size:11px;font-weight:500;margin-bottom:4px;color:#e2e8f0">{{ dia }}</div>
+          {% endif %}
+          {% if bloqueado %}
+            <div style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(50,50,50,0.8);color:#4a6580;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ bloqueado }}">🚫 Bloqueado</div>
+          {% endif %}
+          {% if data_obj in dias_vistoria and not tem_reserva %}
+            <div style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(200,160,40,0.18);color:#c8a840;margin-bottom:2px">Vistoria</div>
+          {% endif %}
+          {% for r in res_dia %}
+            {% if r.status != 'cancelado' %}
+            <div style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+              {% if r.zelador %}background:rgba(40,180,120,0.2);color:#4ac090
+              {% elif r.surpresa %}background:rgba(140,80,200,0.2);color:#a070d0
+              {% elif r.vistoria and r.data_vistoria and r.data_vistoria < r.data_festa %}background:rgba(200,160,40,0.2);color:#c8a840
+              {% elif r.status == 'confirmado' %}background:rgba(59,130,246,0.25);color:#60a5fa
+              {% else %}background:rgba(220,120,40,0.2);color:#e07840{% endif %}">
+              {% if r.festa_condominio %}[Cond.]{% elif r.nome_solicitante %}{{ r.nome_solicitante.split()[0] }}{% else %}—{% endif %}
+            </div>
+            {% endif %}
+          {% endfor %}
+        </a>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <!-- Legenda -->
+  <div style="display:flex;flex-wrap:wrap;gap:14px;padding:12px 22px;border-top:0.5px solid rgba(255,255,255,0.04);background:#0f0f0f">
+    {% set legenda = [
+      ('rgba(59,130,246,0.25)', '#60a5fa', 'Confirmado'),
+      ('rgba(220,120,40,0.2)', '#e07840', 'Pendente'),
+      ('rgba(200,160,40,0.2)', '#c8a840', 'Vistoria'),
+      ('rgba(200,60,60,0.15)', '#d07070', 'Cancelado'),
+      ('rgba(140,80,200,0.2)', '#a070d0', 'Surpresa'),
+      ('rgba(40,180,120,0.2)', '#4ac090', 'Zelador'),
+      ('rgba(50,50,50,0.8)', '#4a6580', 'Bloqueado'),
+    ] %}
+    {% for bg, cor, label in legenda %}
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:#4a6580">
+      <div style="width:10px;height:10px;border-radius:3px;background:{{ bg }}"></div>
+      {{ label }}
+    </div>
+    {% endfor %}
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:#8b3030;font-weight:700">
+      <div style="width:10px;height:10px;border-radius:50%;background:#8b2020"></div> Feriado
+    </div>
+  </div>
+</div>
+
+<!-- ── Salões ────────────────────────────────────────────── -->
+{% if condominio.saloes %}
+<div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-top:18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;display:flex;align-items:center;gap:8px;margin:0">
+      <i class="ti ti-door" style="font-size:15px;color:#60a5fa"></i> Salões
+    </h3>
+    <span style="font-size:11px;color:#4a6580;background:rgba(255,255,255,0.04);padding:3px 10px;border-radius:100px;border:0.5px solid rgba(255,255,255,0.06)">{{ condominio.saloes|length }} salão(ões)</span>
+  </div>
+  {% for s in condominio.saloes %}
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:0.5px solid rgba(255,255,255,0.04);transition:background 0.15s;gap:16px"
+    onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+    <div style="display:flex;align-items:center;gap:14px;min-width:0">
+      <div style="width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(59,130,246,0.12));border:0.5px solid rgba(46,95,138,0.3);display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:15px;font-weight:800;flex-shrink:0;font-family:'DM Serif Display',serif">
+        {{ s.nome[0].upper() }}
+      </div>
+      <div style="min-width:0">
+        <p style="font-size:13px;font-weight:700;color:#ebebeb;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.nome }}</p>
+        <p style="font-size:11px;color:#4a6580;margin:0;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <span style="color:#60a5fa;font-weight:700">R$ {{ '%.2f'|format(s.valor) }}</span>
+          <span>·</span>
+          <span>{{ s.forma_pagamento }}</span>
+          <span>·</span>
+          <span>{{ 'Dia inteiro' if s.tipo == 'dia_inteiro' else s.horarios }}</span>
+          {% if s.grupo %}<span>· Grupo: {{ s.grupo }}</span>{% endif %}
+          {% if s.combo %}<span style="color:#a070d0;font-weight:700">· 🔗 Combo</span>{% endif %}
+        </p>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <a href="{{ url_for('relatorios.admin_inventario', salao_id=s.id) }}"
+        style="font-size:11px;font-weight:700;color:#60a5fa;border:0.5px solid rgba(46,95,138,0.3);background:rgba(59,130,246,0.07);padding:7px 12px;border-radius:9px;text-decoration:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px"
+        onmouseover="this.style.background='rgba(59,130,246,0.18)';this.style.borderColor='rgba(46,95,138,0.45)'"
+        onmouseout="this.style.background='rgba(59,130,246,0.07)';this.style.borderColor='rgba(46,95,138,0.3)'">
+        <i class="ti ti-list" style="font-size:12px"></i> Inventário
+      </a>
+      <a href="{{ url_for('saloes.editar_salao', id=s.id) }}"
+        style="font-size:11px;font-weight:700;color:#909090;border:0.5px solid rgba(255,255,255,0.08);background:transparent;padding:7px 12px;border-radius:9px;text-decoration:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.18)';this.style.color='#ebebeb';this.style.background='rgba(255,255,255,0.04)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090';this.style.background='transparent'">
+        <i class="ti ti-edit" style="font-size:12px"></i> Editar
+      </a>
+      <button type="button" onclick="abrirModal('modal-excluir-salao-{{ s.id }}')"
+        style="font-size:11px;font-weight:700;color:#d07070;border:0.5px solid rgba(200,60,60,0.2);background:transparent;padding:7px 12px;border-radius:9px;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px"
+        onmouseover="this.style.background='rgba(200,60,60,0.1)';this.style.borderColor='rgba(200,60,60,0.35)'"
+        onmouseout="this.style.background='transparent';this.style.borderColor='rgba(200,60,60,0.2)'">
+        <i class="ti ti-trash" style="font-size:12px"></i> Excluir
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal excluir salão -->
+  <div id="modal-excluir-salao-{{ s.id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(4px)">
+    <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;width:100%;max-width:400px;margin:16px;box-shadow:0 32px 64px rgba(0,0,0,0.6)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(200,60,60,0.1);border:0.5px solid rgba(200,60,60,0.25);display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-trash" style="font-size:16px;color:#d07070"></i>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:#d07070;margin:0">Excluir salão</h3>
+      </div>
+      <p style="font-size:13px;color:#909090;margin:0 0 18px;line-height:1.6">Isso excluirá <strong style="color:#ebebeb">{{ s.nome }}</strong> e todas as reservas vinculadas. Digite a senha do admin para confirmar.</p>
+      <input type="password" id="senha-excluir-salao-{{ s.id }}" placeholder="Senha do admin"
+        style="width:100%;padding:11px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;margin-bottom:16px">
+      <div style="display:flex;gap:8px">
+        <form method="POST" action="{{ url_for('saloes.excluir_salao', id=s.id) }}" id="form-excluir-salao-{{ s.id }}" class="contents">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="senha_admin" id="hidden-senha-salao-{{ s.id }}">
+          <input type="hidden" name="condominio_id" value="{{ condominio.id }}">
+          <button type="button" onclick="submeterExcluirSalao({{ s.id }})"
+            style="flex:1;background:linear-gradient(135deg,#7a1f1f,#5c1515);color:#ffcccc;font-size:13px;font-weight:600;padding:11px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s"
+            onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">Excluir</button>
+        </form>
+        <button type="button" onclick="fecharModal('modal-excluir-salao-{{ s.id }}')"
+          style="flex:1;background:#152338;color:#909090;font-size:13px;font-weight:600;padding:11px;border-radius:12px;border:0.5px solid rgba(255,255,255,0.07);cursor:pointer;transition:all 0.15s"
+          onmouseover="this.style.background='#1c2e44';this.style.color='#ebebeb'" onmouseout="this.style.background='#152338';this.style.color='#909090'">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+function toggleMesPicker() {
+  document.getElementById('mes-picker').classList.toggle('hidden');
+}
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('mes-picker');
+  if (!picker || picker.classList.contains('hidden')) return;
+  if (!picker.contains(e.target) && !e.target.closest('button[onclick="toggleMesPicker()"]')) {
+    picker.classList.add('hidden');
+  }
+});
+function submeterExcluirSalao(id) {
+  const senha = document.getElementById('senha-excluir-salao-' + id).value;
+  if (!senha) { alert('Digite a senha do admin.'); return; }
+  document.getElementById('hidden-senha-salao-' + id).value = senha;
+  document.getElementById('form-excluir-salao-' + id).submit();
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block title %}Regras de Precificação — CondoReservas{% endblock %}
+{% block page_title %}Regras de Precificação Especial{% endblock %}
+{% block content %}
+<div style="max-width:800px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <p style="font-size:13px;color:#6a8aaa;margin:0">Condomínios com isenção nas primeiras N reservas do ano por apartamento.</p>
+    <a href="{{ url_for('relatorios.nova_regra_precificacao') }}"
+      style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:9px 18px;border-radius:10px;font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+      <i class="ti ti-plus"></i> Nova Regra
+    </a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div style="background:{% if cat == 'success' %}rgba(22,101,52,0.12){% else %}rgba(121,31,31,0.12){% endif %};
+      border:0.5px solid {% if cat == 'success' %}rgba(34,197,94,0.3){% else %}rgba(180,60,60,0.3){% endif %};
+      border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600;
+      color:{% if cat == 'success' %}#4ade80{% else %}#d07070{% endif %};margin-bottom:14px">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if novo %}
+  <!-- Formulário nova regra -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px;margin-bottom:20px">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 18px">Nova Regra</h3>
+    <form method="POST" action="{{ url_for('relatorios.nova_regra_precificacao') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Salão</label>
+          <select name="salao_id" required style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none;cursor:pointer">
+            {% for cond in condominios %}
+              {% for s in cond.saloes %}
+              <option value="{{ s.id }}">{{ cond.nome }} — {{ s.nome }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Limite de Reservas Isentas / Ano</label>
+          <input type="number" name="limite_reservas" value="1" min="1" max="12" required
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Valor Adicional Opcional (R$) — deixe vazio se não houver</label>
+          <input type="number" name="valor_opcional" step="0.01" min="0" placeholder="Ex: 50.00"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Descrição (aparece no histórico)</label>
+          <input type="text" name="descricao" placeholder="Ex: 1ª reserva do ano gratuita" maxlength="200"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:9px 20px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <i class="ti ti-check"></i> Salvar Regra
+        </button>
+        <a href="{{ url_for('relatorios.listar_regras_precificacao') }}"
+          style="border:0.5px solid rgba(255,255,255,0.10);color:#909090;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if editar %}
+  <!-- Formulário editar regra -->
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px;margin-bottom:20px">
+    <h3 style="font-size:14px;font-weight:700;color:#ebebeb;margin:0 0 4px">Editar Regra</h3>
+    <p style="font-size:12px;color:#4a6580;margin:0 0 18px">{{ editar.salao.nome }} — {{ editar.salao.condominio.nome }}</p>
+    <form method="POST" action="{{ url_for('relatorios.editar_regra_precificacao', id=editar.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Limite de Reservas Isentas / Ano</label>
+          <input type="number" name="limite_reservas" value="{{ editar.limite_reservas }}" min="1" max="12" required
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Valor Adicional Opcional (R$) — deixe vazio se não houver</label>
+          <input type="number" name="valor_opcional" step="0.01" min="0" placeholder="Ex: 50.00"
+            value="{{ '%.2f'|format(editar.valor_opcional) if editar.valor_opcional else '' }}"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+        <div style="grid-column:1 / -1">
+          <label style="font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:7px">Descrição (aparece no histórico)</label>
+          <input type="text" name="descricao" value="{{ editar.descricao or '' }}" maxlength="200"
+            style="width:100%;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#ebebeb;font-size:13px;outline:none">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#909090;margin-bottom:18px;cursor:pointer">
+        <input type="checkbox" name="ativo" {{ 'checked' if editar.ativo else '' }} style="accent-color:#2E5F8A;width:14px;height:14px">
+        Regra ativa
+      </label>
+      <div style="display:flex;gap:10px">
+        <button type="submit"
+          style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;padding:9px 20px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <i class="ti ti-check"></i> Salvar Alterações
+        </button>
+        <a href="{{ url_for('relatorios.listar_regras_precificacao') }}"
+          style="border:0.5px solid rgba(255,255,255,0.10);color:#909090;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- [FIX] aplicar retroativamente — regra cadastrada depois das reservas
+       já existirem nunca alcança elas, isso preenche a lacuna. -->
+  <div style="background:#111e30;border:0.5px solid rgba(245,158,11,0.25);border-radius:16px;padding:20px 24px">
+    <p style="font-size:13px;font-weight:700;color:#fbbf24;margin:0 0 6px"><i class="ti ti-history"></i> Aplicar retroativamente</p>
+    <p style="font-size:12px;color:#909090;margin:0 0 14px">
+      Marca como isentas as reservas deste salão já existentes neste ano ({{ ano_atual }}) que ainda não têm
+      registro de cota — respeitando o limite por apartamento, na ordem cronológica. Não duplica nem sobrescreve
+      reservas que já têm registro.
+    </p>
+    <form method="POST" action="{{ url_for('relatorios.aplicar_retroativo_regra_precificacao', id=editar.id) }}"
+      onsubmit="return confirm('Aplicar a regra retroativamente às reservas já existentes deste salão em {{ ano_atual }}?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if editar.valor_opcional %}
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#909090;margin-bottom:14px;cursor:pointer">
+        <input type="checkbox" name="usar_opcional" checked style="accent-color:#2E5F8A;width:14px;height:14px">
+        Cobrar o adicional de R$ {{ '%.2f'|format(editar.valor_opcional) }} nessas reservas retroativas também
+      </label>
+      {% endif %}
+      <button type="submit"
+        style="background:rgba(245,158,11,0.15);border:0.5px solid rgba(245,158,11,0.3);color:#fbbf24;padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        <i class="ti ti-history"></i> Aplicar às reservas já existentes
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Listagem -->
+  {% if regras is defined and regras %}
+  <div style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:0.5px solid rgba(255,255,255,0.07)">
+          <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">Salão / Condomínio</th>
+          <th style="padding:12px 16px;text-align:center;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">Limite/Ano</th>
+          <th style="padding:12px 16px;text-align:center;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">Adicional</th>
+          <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">Descrição</th>
+          <th style="padding:12px 16px;text-align:center;font-size:11px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.07em">Status</th>
+          <th style="padding:12px 16px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in regras %}
+        <tr style="border-bottom:0.5px solid rgba(255,255,255,0.04)">
+          <td style="padding:12px 16px;color:#ebebeb">
+            {{ r.salao.nome }}<br>
+            <span style="font-size:11px;color:#4a6580">{{ r.salao.condominio.nome }}</span>
+          </td>
+          <td style="padding:12px 16px;text-align:center;color:#60a5fa;font-weight:700">{{ r.limite_reservas }}</td>
+          <td style="padding:12px 16px;text-align:center;color:#d4a040">
+            {% if r.valor_opcional %}R$ {{ '%.2f'|format(r.valor_opcional) }}{% else %}<span style="color:#404040">—</span>{% endif %}
+          </td>
+          <td style="padding:12px 16px;color:#808080">{{ r.descricao or '—' }}</td>
+          <td style="padding:12px 16px;text-align:center">
+            {% if r.ativo %}
+            <span style="background:rgba(22,101,52,0.15);color:#4ade80;border:0.5px solid rgba(34,197,94,0.25);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600">Ativa</span>
+            {% else %}
+            <span style="background:rgba(60,60,60,0.3);color:#606060;border:0.5px solid rgba(100,100,100,0.2);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600">Inativa</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px 16px;text-align:right;white-space:nowrap">
+            <a href="{{ url_for('relatorios.editar_regra_precificacao', id=r.id) }}"
+              style="background:rgba(59,130,246,0.12);border:0.5px solid rgba(46,95,138,0.3);color:#60a5fa;padding:5px 10px;border-radius:8px;font-size:11px;text-decoration:none;display:inline-flex;margin-right:6px">
+              <i class="ti ti-pencil"></i>
+            </a>
+            <form method="POST" action="{{ url_for('relatorios.excluir_regra_precificacao', id=r.id) }}"
+              onsubmit="return confirm('Remover esta regra?')" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                style="background:rgba(121,31,31,0.15);border:0.5px solid rgba(180,60,60,0.25);color:#d07070;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer">
+                <i class="ti ti-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif not novo and not editar %}
+  <p style="color:#404040;font-size:13px;text-align:center;padding:40px">Nenhuma regra cadastrada.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,426 @@
+﻿{% extends 'base.html' %}
+{% block title %}Relatório — CondoReservas{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+
+{% block content %}
+
+<!-- ── Header do filtro ──────────────────────────────────── -->
+<div class="print:hidden" style="background:#111e30;border:0.5px solid rgba(255,255,255,0.07);border-radius:20px;margin-bottom:18px;position:relative;z-index:50">
+  <!-- Section header -->
+  <div style="padding:18px 24px;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:14px">
+    <div style="width:38px;height:38px;border-radius:11px;background:rgba(59,130,246,0.12);border:0.5px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="ti ti-chart-bar" style="font-size:18px;color:#60a5fa"></i>
+    </div>
+    <div>
+      <h2 style="font-size:16px;font-weight:700;color:#ebebeb;margin:0 0 2px">
+        {% if tipo == 'mensal' %}Relatório — {{ condominio.nome }}{% else %}Relatório Semanal{% endif %}
+      </h2>
+      <p style="font-size:12px;color:#4a6580;margin:0">Filtre por período para visualizar as reservas</p>
+    </div>
+  </div>
+
+  <!-- Filter form -->
+  <div style="padding:20px 24px">
+    <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+
+      <!-- Data Início -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Início</label>
+        <input type="date" name="inicio" value="{{ data_inicio.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+
+      <!-- Data Fim -->
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Data Fim</label>
+        <input type="date" name="fim" value="{{ data_fim.isoformat() }}"
+          style="padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s;cursor:pointer"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+
+      <!-- Unidade (apenas mensal) -->
+      {% if tipo == 'mensal' %}
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:#4a6580;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Unidade</label>
+        <input type="text" name="apartamento" value="{{ apartamento or '' }}" placeholder="Ex: 302"
+          style="width:100px;padding:10px 14px;background:#152338;border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#ebebeb;font-size:13px;outline:none;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='rgba(46,95,138,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+      </div>
+      {% endif %}
+
+      <!-- Filtrar -->
+      <button type="submit"
+        style="background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3);display:inline-flex;align-items:center;gap:6px"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+        <i class="ti ti-filter" style="font-size:13px"></i> Filtrar
+      </button>
+
+      <!-- ── Dropdown exportar ──────────────────────────────── -->
+      <div style="position:relative" id="export-wrap">
+        <button type="button" id="export-btn" onclick="toggleExport(event)"
+          style="background:#152338;border:0.5px solid rgba(255,255,255,0.08);color:#909090;font-size:13px;font-weight:600;padding:10px 18px;border-radius:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:all 0.15s"
+          onmouseover="this.style.borderColor='rgba(46,95,138,0.4)';this.style.color='#60a5fa';this.style.background='rgba(59,130,246,0.06)'"
+          onmouseout="if(!window._exportOpen){this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#909090';this.style.background='#152338'}">
+          <i class="ti ti-download" style="font-size:14px"></i>
+          Exportar
+          <i class="ti ti-chevron-down" id="export-chevron" style="font-size:11px;opacity:0.6;transition:transform 0.2s"></i>
+        </button>
+
+        <div id="export-menu"
+          style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#111e30;border:0.5px solid rgba(255,255,255,0.09);border-radius:14px;min-width:204px;z-index:1000;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,0.55)">
+
+          <!-- PDF (reservas) -->
+          <a href="?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}{% if apartamento %}&apartamento={{ apartamento }}{% endif %}&pdf=1"
+            target="_blank"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;color:#ebebeb;text-decoration:none;font-size:13px;font-weight:600;border-bottom:0.5px solid rgba(255,255,255,0.05);transition:background 0.12s"
+            onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(200,60,60,0.1);border:0.5px solid rgba(200,60,60,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-file-pdf" style="font-size:15px;color:#d07070"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;color:#ebebeb;font-weight:600">Exportar PDF</div>
+              <div style="font-size:10px;color:#4a6580;margin-top:1px">Relatório de reservas</div>
+            </div>
+          </a>
+
+          {% if tipo == 'semanal' %}
+          <!-- PDF Limpezas (apenas semanal) -->
+          <a href="?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}&pdf_limpeza=1"
+            target="_blank"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;color:#ebebeb;text-decoration:none;font-size:13px;font-weight:600;border-bottom:0.5px solid rgba(255,255,255,0.05);transition:background 0.12s"
+            onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(40,180,120,0.1);border:0.5px solid rgba(40,180,120,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-spray" style="font-size:15px;color:#4ac090"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;color:#ebebeb;font-weight:600">Limpezas PDF</div>
+              <div style="font-size:10px;color:#4a6580;margin-top:1px">Escala semanal</div>
+            </div>
+          </a>
+          {% endif %}
+
+          {% if tipo != 'semanal' %}
+          <!-- Excel -->
+          <a href="?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}{% if apartamento %}&apartamento={{ apartamento }}{% endif %}&excel=1"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;color:#ebebeb;text-decoration:none;font-size:13px;font-weight:600;border-bottom:0.5px solid rgba(255,255,255,0.05);transition:background 0.12s"
+            onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(40,180,120,0.1);border:0.5px solid rgba(40,180,120,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-file-spreadsheet" style="font-size:15px;color:#4ac090"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;color:#ebebeb;font-weight:600">Exportar Excel</div>
+              <div style="font-size:10px;color:#4a6580;margin-top:1px">Planilha .xlsx</div>
+            </div>
+          </a>
+
+          <!-- Word -->
+          <a href="?inicio={{ data_inicio.isoformat() }}&fim={{ data_fim.isoformat() }}{% if apartamento %}&apartamento={{ apartamento }}{% endif %}&word=1"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;color:#ebebeb;text-decoration:none;font-size:13px;font-weight:600;transition:background 0.12s"
+            onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(46,95,138,0.1);border:0.5px solid rgba(46,95,138,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-file-word" style="font-size:15px;color:#60a5fa"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;color:#ebebeb;font-weight:600">Exportar Word</div>
+              <div style="font-size:10px;color:#4a6580;margin-top:1px">Documento .docx</div>
+            </div>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <!-- ── /Dropdown ───────────────────────────────────────── -->
+
+    </form>
+  </div>
+</div>
+
+<style>
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  table { background: #fff !important; }
+  td, th { color: #000 !important; background: #fff !important; }
+  td.bg-red-950\/30 { background: #fff0f0 !important; }
+  td.bg-amber-950\/30 { background: #fffbeb !important; }
+  .print-status-obs { display: inline !important; }
+}
+</style>
+
+<!-- ── Tabela unificada (semanal + mensal) ──────────────── -->
+{% if reservas %}
+
+<div class="flex items-center justify-between mb-3 print:hidden" style="padding:0 2px">
+  <h3 style="font-size:13px;font-weight:700;color:#ebebeb;display:flex;align-items:center;gap:8px;margin:0">
+    <i class="ti ti-table" style="font-size:14px;color:#60a5fa"></i>
+    Resultados
+  </h3>
+  <span style="font-size:11px;color:#4a6580;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);padding:4px 12px;border-radius:100px">
+    {{ reservas|length }} reserva{% if reservas|length != 1 %}s{% endif %}
+  </span>
+</div>
+
+<div class="overflow-x-auto bg-[#111e30] border border-slate-700 rounded-lg shadow-sm print:bg-white print:border-gray-400 print:rounded-none print:shadow-none">
+  <table class="w-full text-sm text-left text-slate-200 print:text-gray-800">
+    <thead class="text-xs text-slate-300 uppercase bg-[#1E3A5F] border-b border-slate-600 print:bg-transparent print:text-gray-600 print:border-gray-400">
+      <tr>
+        <th class="px-3 py-3 whitespace-nowrap">Dia</th>
+        <th class="px-3 py-3">Condomínio</th>
+        <th class="px-3 py-3">Apto</th>
+        <th class="px-3 py-3">NOME / TELEFONE</th>
+        <th class="px-3 py-3">Salão</th>
+        <th class="px-3 py-3 text-center">PAGAMENTO</th>
+        <th class="px-3 py-3 text-center print:hidden">GEP</th>
+        <th class="px-3 py-3">OBS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for reserva in reservas %}
+      {% set cancelada_fds = reserva.id in (canceladas_fds_ids or []) %}
+      <tr class="border-b border-slate-700 print:border-gray-300
+          {%- if cancelada_fds %} bg-orange-950/40 ring-1 ring-inset ring-orange-500/50
+          {%- elif reserva.id in (destaque_ids or []) %} bg-white/10 ring-1 ring-inset ring-white/40
+          {%- elif reserva.status == 'cancelado' %} bg-red-950/30 print:bg-white
+          {%- elif reserva.status == 'pendente' %} bg-amber-950/30 print:bg-white
+          {%- else %} hover:bg-slate-800/50
+          {%- endif %}"
+          {%- if reserva.id in (destaque_ids or []) %} data-destaque="1"{% endif %}>
+
+        <td class="px-3 py-2.5 font-bold whitespace-nowrap
+            {%- if cancelada_fds %} text-orange-400
+            {%- elif reserva.id in (destaque_ids or []) %} text-white
+            {%- elif reserva.status == 'cancelado' %} text-red-400 print:text-gray-500
+            {%- elif reserva.status == 'pendente' %} text-amber-400 print:text-amber-700
+            {%- else %} text-slate-300 print:text-gray-700{%- endif %}">
+          {% if cancelada_fds %}
+          <span class="print:hidden" style="display:inline-flex;align-items:center;gap:3px;background:#f97316;color:#1a0f00;font-size:9px;font-weight:800;padding:1.5px 6px;border-radius:6px;margin-right:6px;letter-spacing:.03em;vertical-align:middle">
+            <i class="ti ti-calendar-x" style="font-size:9px"></i> CANCELADA NO FDS
+          </span>
+          {% elif reserva.id in (destaque_ids or []) %}
+          <span class="badge-nova print:hidden" style="display:inline-flex;align-items:center;gap:3px;background:#fff;color:#111e30;font-size:9px;font-weight:800;padding:1.5px 6px;border-radius:6px;margin-right:6px;letter-spacing:.03em;vertical-align:middle">
+            <i class="ti ti-sparkles" style="font-size:9px"></i>NOVA
+          </span>
+          {% endif %}
+          {{ reserva.data_festa.strftime('%d/%m') }}
+        </td>
+
+        <td class="px-3 py-2.5 text-xs font-semibold text-slate-400 whitespace-nowrap print:text-black">
+          {{ reserva.salao.condominio.nome }}
+        </td>
+
+        <td class="px-3 py-2.5 font-medium
+            {%- if reserva.status == 'cancelado' %} text-red-400 print:text-gray-500
+            {%- else %} text-slate-300 print:text-gray-700{%- endif %}">
+          {% if reserva.festa_condominio %}—{% else %}{{ reserva.apartamento or '—' }}{% endif %}
+        </td>
+
+        <td class="px-3 py-2.5 max-w-[180px]
+            {%- if reserva.status == 'cancelado' %} text-red-400 print:text-gray-500
+            {%- else %} text-slate-200 print:text-gray-800{%- endif %}">
+          {% if reserva.festa_condominio %}
+            <span class="font-bold text-xs uppercase tracking-wide">Festa do Condomínio</span>
+          {% else %}
+            <div class="text-xs leading-tight">
+              <div class="font-semibold truncate">{{ reserva.nome_solicitante|upper if reserva.nome_solicitante else '—' }}</div>
+              {% if reserva.contato %}<div class="text-slate-400 print:text-gray-600 truncate">{{ reserva.contato }}</div>{% endif %}
+            </div>
+          {% endif %}
+        </td>
+
+        <td class="px-3 py-2.5 text-xs text-slate-400 print:text-black">{{ reserva.salao.nome }}</td>
+
+        {% if reserva.status == 'cancelado' %}
+        <td class="px-3 py-2.5 text-center text-slate-500">—</td>
+        <td class="px-3 py-2.5 print:hidden"></td>
+        <td class="px-3 py-2.5 text-xs font-semibold italic print:text-gray-600 {{ 'text-orange-400' if cancelada_fds else 'text-red-500' }}">
+          Cancelada{% if reserva.cancelado_em %} em {{ reserva.cancelado_em_br.strftime('%d/%m') if reserva.cancelado_em_br else reserva.cancelado_em.strftime('%d/%m') }}{% endif %}
+          {%- if reserva.observacao_cancelamento %} — {{ reserva.observacao_cancelamento }}{% endif %}
+        </td>
+
+        {% else %}
+        <td class="px-3 py-2.5 text-center">
+          {% if reserva.registro_anual and reserva.registro_anual.valor_opcional_usado and reserva.salao.regra_precificacao and reserva.salao.regra_precificacao.valor_opcional %}
+            <span class="text-[10px] font-bold bg-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded print:bg-white print:border print:border-black print:text-black">ISENTO (taxa)</span>
+            <div class="font-semibold text-xs text-slate-300 print:text-black">R$ {{ "%.2f"|format(reserva.salao.regra_precificacao.valor_opcional) }}</div>
+          {% elif reserva.registro_anual or reserva.salao.valor == 0 %}
+            <span class="text-[10px] font-bold bg-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded print:bg-white print:border print:border-black print:text-black">ISENTO</span>
+          {% else %}
+            <div class="text-xs text-slate-300 print:text-black leading-tight">
+              <div>{{ reserva.salao.forma_pagamento or '—' }}</div>
+              <div class="font-semibold">R$ {{ "%.2f"|format(reserva.salao.valor) }}</div>
+            </div>
+          {% endif %}
+        </td>
+
+        <td class="px-3 py-2.5">
+          {% set isento_total = reserva.registro_anual and not reserva.registro_anual.valor_opcional_usado %}
+          {% if reserva.salao.valor != 0 and not isento_total and not reserva.festa_condominio %}
+            {% if reserva.salao.forma_pagamento and 'condomínio' in reserva.salao.forma_pagamento.lower() %}
+            {% if session.get('usuario_perfil') != 'fiscal' %}
+            <div class="flex items-center gap-2 text-xs font-bold print:hidden">
+              <label class="flex items-center gap-1 cursor-pointer" title="Boleto Gerado">
+                <span class="text-gray-500">G</span>
+                <input type="checkbox" data-id="{{ reserva.id }}" data-type="gerado"
+                  class="gep-cb w-3.5 h-3.5 rounded accent-blue-600"
+                  {% if reserva.boleto_gerado %}checked{% endif %}>
+              </label>
+            </div>
+            <span class="hidden print:inline text-xs font-bold tracking-wide">
+              G{% if reserva.boleto_gerado %}✓{% else %}—{% endif %}
+            </span>
+            {% else %}
+            <span class="text-xs font-bold tracking-wide text-gray-500">
+              G{% if reserva.boleto_gerado %}✓{% else %}—{% endif %}
+            </span>
+            {% endif %}
+            {% else %}
+            {% if session.get('usuario_perfil') != 'fiscal' %}
+            <div class="flex items-center gap-2 text-xs font-bold print:hidden">
+              <label class="flex items-center gap-1 cursor-pointer" title="Boleto Gerado">
+                <span class="text-gray-500">G</span>
+                <input type="checkbox" data-id="{{ reserva.id }}" data-type="gerado"
+                  class="gep-cb w-3.5 h-3.5 rounded accent-blue-600"
+                  {% if reserva.boleto_gerado %}checked{% endif %}>
+              </label>
+              <label class="flex items-center gap-1 cursor-pointer" title="Boleto Enviado">
+                <span class="text-gray-500">E</span>
+                <input type="checkbox" data-id="{{ reserva.id }}" data-type="enviado"
+                  class="gep-cb w-3.5 h-3.5 rounded accent-amber-500"
+                  {% if reserva.boleto_enviado %}checked{% endif %}>
+              </label>
+              <label class="flex items-center gap-1 cursor-pointer" title="Boleto Pago">
+                <span class="text-gray-500">P</span>
+                <input type="checkbox" data-id="{{ reserva.id }}" data-type="pago"
+                  class="gep-cb w-3.5 h-3.5 rounded accent-emerald-500"
+                  {% if reserva.boleto_pago %}checked{% endif %}>
+              </label>
+            </div>
+            <span class="hidden print:inline text-xs font-bold tracking-wide">
+              G{% if reserva.boleto_gerado %}✓{% else %}—{% endif %}
+              E{% if reserva.boleto_enviado %}✓{% else %}—{% endif %}
+              P{% if reserva.boleto_pago %}✓{% else %}—{% endif %}
+            </span>
+            {% else %}
+            <span class="text-xs font-bold tracking-wide text-gray-500">
+              G{% if reserva.boleto_gerado %}✓{% else %}—{% endif %}
+              E{% if reserva.boleto_enviado %}✓{% else %}—{% endif %}
+              P{% if reserva.boleto_pago %}✓{% else %}—{% endif %}
+            </span>
+            {% endif %}
+            {% endif %}
+          {% endif %}
+        </td>
+
+        <td class="px-2 py-2">
+          {% if session.get('usuario_perfil') != 'fiscal' %}
+          <input type="text" data-id="{{ reserva.id }}"
+            class="obs-in w-full border-0 border-b border-transparent hover:border-slate-500 focus:border-blue-500 focus:ring-0 bg-transparent text-slate-300 text-xs p-0.5 placeholder:text-slate-600 print:hidden"
+            value="{{ reserva.observacoes or '' }}" placeholder="Obs...">
+          <span style="display:none" class="print-status-obs text-xs text-gray-700">{% if reserva.status|lower in ['cancelado', 'cancelada', 'pendente'] %}<span class="font-bold">[{{ reserva.status|upper }}] </span>{% endif %}{{ reserva.observacoes or '' }}</span>
+          {% else %}
+          <span class="text-xs text-slate-300">{{ reserva.observacoes or '' }}{% if reserva.status|lower in ['cancelado', 'cancelada', 'pendente'] %} <span class="font-bold print:text-black">(STATUS: {{ reserva.status|upper }})</span>{% endif %}</span>
+          {% endif %}
+        </td>
+
+        {% endif %}
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <i class="ti ti-clipboard-list empty-icon"></i>
+  <p style="font-weight:600;font-size:14px;color:#909090">Nenhuma reserva encontrada para este período</p>
+  <p>Ajuste o intervalo de datas e clique em Filtrar</p>
+</div>
+{% endif %}
+
+<script>
+window._exportOpen = false;
+
+function toggleExport(e) {
+  e.stopPropagation();
+  const menu    = document.getElementById('export-menu');
+  const chevron = document.getElementById('export-chevron');
+  const btn     = document.getElementById('export-btn');
+  window._exportOpen = !window._exportOpen;
+  menu.style.display      = window._exportOpen ? 'block' : 'none';
+  chevron.style.transform = window._exportOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  if (window._exportOpen) {
+    btn.style.borderColor = 'rgba(46,95,138,0.4)';
+    btn.style.color       = '#60a5fa';
+    btn.style.background  = 'rgba(59,130,246,0.06)';
+  } else {
+    btn.style.borderColor = 'rgba(255,255,255,0.08)';
+    btn.style.color       = '#909090';
+    btn.style.background  = '#152338';
+  }
+}
+
+document.addEventListener('click', function() {
+  if (window._exportOpen) {
+    window._exportOpen = false;
+    document.getElementById('export-menu').style.display = 'none';
+    document.getElementById('export-chevron').style.transform = 'rotate(0deg)';
+    document.getElementById('export-btn').style.borderColor = 'rgba(255,255,255,0.08)';
+    document.getElementById('export-btn').style.color       = '#909090';
+    document.getElementById('export-btn').style.background  = '#152338';
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const syncAPI = async (id, payload, element) => {
+    try {
+      const res = await fetch(`/api/reservas/${id}/gep_obs`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error();
+      if (element.type === 'text') {
+        element.classList.add('bg-emerald-900/60');
+        setTimeout(() => element.classList.remove('bg-emerald-900/60'), 700);
+      }
+      return true;
+    } catch {
+      alert('Erro ao salvar. Verifique a internet e tente novamente.');
+      return false;
+    }
+  };
+
+  const syncRow = async (element) => {
+    const id  = element.dataset.id;
+    const row = element.closest('tr');
+    if (!row || !id) return;
+    const geradoCb = row.querySelector('[data-type="gerado"]');
+    const ok = await syncAPI(id, {
+      gerado:      geradoCb?.checked ?? false,
+      enviado:     row.querySelector('[data-type="enviado"]')?.checked ?? false,
+      pago:        row.querySelector('[data-type="pago"]')?.checked    ?? false,
+      observacoes: row.querySelector('.obs-in')?.value                 ?? ''
+    }, element);
+
+    // [FEATURE] destaque "NOVA" some assim que o G é marcado — não precisa
+    // recarregar a página pra sumir da lista de pendências.
+    if (ok && row.dataset.destaque === '1' && geradoCb?.checked) {
+      row.classList.remove('bg-white/10', 'ring-1', 'ring-inset', 'ring-white/40');
+      row.querySelectorAll('.text-white').forEach(el => el.classList.remove('text-white'));
+      row.querySelector('.badge-nova')?.remove();
+      row.dataset.destaque = '0';
+    }
+  };
+
+  document.querySelectorAll('.gep-cb').forEach(cb =>
+    cb.addEventListener('change', e => syncRow(e.target))
+  );
+  document.querySelectorAll('.obs-in').forEach(inp => {
+    inp.addEventListener('blur',     e => syncRow(e.target));
+    inp.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+  });
+});
+</script>
+
+{% endblock %}

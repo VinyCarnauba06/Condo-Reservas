@@ -1,0 +1,17 @@
+﻿{% extends 'base.html' %}
+{% block title %}Página não encontrada — CondoReservas{% endblock %}
+{% block page_title %}404{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;text-align:center">
+  <div style="font-size:80px;font-weight:800;color:#2E5F8A;line-height:1;margin-bottom:16px;letter-spacing:-2px;opacity:0.4">404</div>
+  <h2 style="font-family:'DM Serif Display',serif;font-size:24px;color:#ebebeb;margin:0 0 8px">Página não encontrada</h2>
+  <p style="font-size:13px;color:#4a6580;margin:0 0 32px">A página que você está procurando não existe ou foi movida.</p>
+  <a href="{{ url_for('condominios.home') }}"
+    style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2563EB,#1d4ed8);color:#fff;font-size:13px;font-weight:600;padding:10px 24px;border-radius:12px;text-decoration:none;transition:all 0.2s;box-shadow:0 0 20px rgba(59,130,246,0.3),0 4px 12px rgba(0,0,0,0.3)"
+    onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,0.35)'"
+    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.25)'">
+    <i class="ti ti-home" style="font-size:14px"></i> Voltar ao Dashboard
+  </a>
+</div>
+{% endblock %}
