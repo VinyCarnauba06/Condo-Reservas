@@ -112,54 +112,70 @@ Este é um sistema de produção lidando com dados de moradores, então seguran�
 
 ---
 
-## Instalação local
+## Instalação local (desenvolvimento)
+
+### 1. Clonar e instalar dependências
 
 ```bash
 git clone https://github.com/VinyCarnauba06/Condo-Reservas.git
 cd Condo-Reservas
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate            # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Crie o arquivo `.env` na raiz (use `.env.example` como base):
+### 2. Configurar o `.env`
+
+Copie `.env.example` para `.env` e preencha. `SECRET_KEY` e `ENCRYPTION_KEY`
+são validadas no boot — precisam ser chaves fortes de verdade:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"                                # SECRET_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"   # ENCRYPTION_KEY
+```
+
+`.env` mínimo para rodar local em SQLite:
 
 ```env
-SECRET_KEY=gere_uma_chave_forte_aqui
-ADMIN_PASSWORD=sua_senha_forte_aqui
+SECRET_KEY=<saída do primeiro comando>
+ENCRYPTION_KEY=<saída do segundo comando>
+ADMIN_PASSWORD=uma_senha_forte
 DATABASE_URL=sqlite:///condoreservas.db
 FLASK_ENV=development
 FLASK_DEBUG=true
-ENCRYPTION_KEY=gere_com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-Rode as migrations e suba o servidor:
+> `sqlite:///condoreservas.db` é resolvido pelo Flask-SQLAlchemy relativo à
+> pasta `instance/` → o arquivo fica em `instance/condoreservas.db`.
+
+### 3. Criar o schema do banco
+
+**SQLite (dev):** as migrations contêm SQL específico de PostgreSQL, então
+`flask db upgrade` a partir de um banco vazio não funciona em SQLite. Use o
+atalho:
+
+```bash
+python bootstrap_db.py     # cria as tabelas a partir dos models e marca o Alembic no head
+```
+
+**PostgreSQL:**
 
 ```bash
 flask db upgrade
-python run.py
 ```
 
-Acesse `http://localhost:5000` — login `admin`, senha definida no `.env` (o usuário admin é criado automaticamente no primeiro boot, se não existir).
-
-### Popular feriados nacionais/estaduais
+### 4. Popular o banco (opcional, recomendado para explorar o sistema)
 
 ```bash
-python seed_feriados.py
+python seed_feriados.py    # feriados nacionais / estaduais / municipais
+python seed_demo.py        # dataset fictício completo
 ```
 
-### Popular dados de demonstração (dev)
-
-```bash
-python seed_demo.py
-```
-
-Popula o banco com um dataset fictício completo para explorar o sistema sem
-cadastrar nada à mão. **Idempotente e aditivo** — cada item só é criado se
-ainda não existir, então rodar de novo não duplica e não apaga nada. O
-script garante o schema antes de inserir (`flask db upgrade` em
-PostgreSQL; `db.create_all()` como fallback em SQLite) e delega os feriados
-ao `seed_feriados.py`.
+`seed_demo.py` é **idempotente e aditivo** — cada item só é criado se ainda
+não existir, então pode rodar quantas vezes quiser sem duplicar nem apagar
+nada. Ele garante o schema antes de inserir (`flask db upgrade` em Postgres;
+`db.create_all()` como fallback em SQLite) e chama o `seed_feriados.py`, então
+na prática também cobre o passo 3. O que ele cria:
 
 | Entidade | O que é criado |
 |---|---|
@@ -172,9 +188,30 @@ ao `seed_feriados.py`.
 | Bloqueios | Períodos bloqueados, globais e por condomínio |
 | Regras de precificação | Regra de isenção anual + cota já registrada por unidade |
 
-Senha de todos os usuários de teste: `senha123!` (ou o valor de
-`SEED_PASSWORD` no `.env`). Logins: `admin`, `marina`, `rafael`,
-`patricia`, `joao.fiscal`, `antonio.fixo` (`carlos.antigo` é o inativo).
+Senha de todos os usuários criados pelo seed: `senha123!` (ou o valor de
+`SEED_PASSWORD` no `.env`).
+
+### 5. Subir o servidor
+
+```bash
+python run.py
+```
+
+Acesse **http://localhost:5001**.
+
+### 6. Login
+
+| Login | Perfil | Origem |
+|---|---|---|
+| `admin` | admin | primeiro boot — senha = `ADMIN_PASSWORD` do `.env` |
+| `marina`, `rafael` | operador | `seed_demo.py` |
+| `patricia` | coordenador | `seed_demo.py` |
+| `joao.fiscal` | fiscal | `seed_demo.py` |
+| `antonio.fixo` | fiscal_fixo | `seed_demo.py` |
+| `carlos.antigo` | operador (inativo) | `seed_demo.py` — não consegue logar |
+
+Sem rodar o `seed_demo.py`, o boot cria apenas `admin` e um `fiscal` (senha
+gerada e impressa no console, ou definida por `FISCAL_PASSWORD`).
 
 ---
 
@@ -203,9 +240,10 @@ condoreservas/
 ├── restore_encrypted.py       — restauração de backup criptografado
 ├── rotina_fuga.py             — exporta reservas dos próximos 15 dias em caso de indisponibilidade
 ├── migrate_sqlite_to_pg.py    — script de migração SQLite → PostgreSQL
+├── bootstrap_db.py            — cria o schema do zero a partir dos models (atalho de dev/SQLite)
 ├── seed_feriados.py           — popula feriados nacionais/estaduais/municipais
 ├── seed_demo.py               — popula dataset fictício de demonstração (idempotente)
-├── run.py
+├── run.py                     — servidor de desenvolvimento (porta 5001)
 ├── requirements.txt
 └── .env.example
 ```
