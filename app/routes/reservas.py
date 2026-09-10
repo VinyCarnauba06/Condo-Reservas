@@ -342,7 +342,8 @@ def nova_reserva(salao_id, data_festa):
             reserva_vistoria_hoje = Reserva.query.filter(
                 Reserva.salao_id == salao_id,
                 Reserva.data_vistoria == data,
-                Reserva.vistoria == True
+                Reserva.vistoria == True,
+                Reserva.id != reserva.id
             ).filter(Reserva.status != 'cancelado').first()
 
             if reserva_vistoria_hoje:
@@ -356,7 +357,7 @@ def nova_reserva(salao_id, data_festa):
 
             db.session.add(Historico(
                 reserva_id = reserva.id,
-                descricao  = f'Reserva criada com status {reserva.status}' + (f' (vistoria em {reserva.data_vistoria.strftime("%d/%m/%Y")})' if tem_vistoria else ''),
+                descricao  = f'Reserva criada com status {reserva.status}' + (f' (vistoria em {reserva.data_vistoria.strftime("%d/%m/%Y")})' if reserva.data_vistoria else ''),
                 usuario    = usuario
             ))
 
